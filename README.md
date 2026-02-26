@@ -1,6 +1,6 @@
 # Invoify
 
-Invoify is a local-first invoice generator built with Next.js App Router, TypeScript, React, and Shadcn UI. It helps users create, save, export, and send invoices with optional cloud sync.
+Invoify is a local-first invoice and quote generator built with Next.js App Router, TypeScript, React, and Shadcn UI. It helps users create, save, export, and send documents with optional cloud sync.
 
 ![Invoify Website image](/public/assets/img/invoify-web-app.png)
 
@@ -9,6 +9,7 @@ Invoify is a local-first invoice generator built with Next.js App Router, TypeSc
 - [Invoify](#invoify)
   - [Table of Contents](#table-of-contents)
   - [Technologies](#technologies)
+  - [Feature Highlights](#feature-highlights)
   - [Architecture](#architecture)
   - [Sync Behavior](#sync-behavior)
   - [Storage and Migration Notes](#storage-and-migration-notes)
@@ -30,6 +31,16 @@ Invoify is a local-first invoice generator built with Next.js App Router, TypeSc
 - **Puppeteer / Chromium:** Server-side PDF rendering.
 - **Nodemailer:** Email delivery for generated PDFs.
 - **Vitest + Playwright:** Unit/integration and end-to-end testing.
+
+## Feature Highlights
+
+- Create either **Invoices** or **Quotes** from the same form flow.
+- Convert a quote to an invoice with one click (with invoice-number prefix handling).
+- Generate PDFs with template support and browser-side PDF caching.
+- Send PDFs over SMTP with editable subject/body/footer.
+- Save, duplicate, search, filter, and export invoice records.
+- Track status (`draft`, `sent`, `paid`) and payment progress.
+- Optional authenticated Supabase sync with conflict handling.
 
 ## Architecture
 
@@ -143,6 +154,14 @@ npm run build
 npm run test:e2e
 ```
 
+SMTP verification (optional):
+
+```bash
+npm run test:smtp
+# or send a real test email when SMTP env vars are configured
+npm run test:smtp:send
+```
+
 Optional cloud-sync e2e test credentials:
 
 ```bash
@@ -179,6 +198,13 @@ npx playwright install --with-deps chromium
 
 ## New in This Release
 
+- Quote mode end-to-end:
+  - Document type support (`invoice` / `quote`) in form, preview, and templates.
+  - Quote-aware PDF/email language and filenames.
+  - One-click Convert to Invoice action and quote-aware success toasts.
+- Review follow-up reliability fixes:
+  - Tightened `EST/ESTIMATE` invoice-number rewrite to avoid mangling IDs like `ESTONIA-42`.
+  - Send-email payload now uses generated PDF snapshot document type for consistency.
 - Production monitoring with Sentry:
   - Captures App Router render crashes, API/service exceptions, and client telemetry errors.
   - Uses `instrumentation.ts` / `instrumentation-client.ts` and `app/global-error.tsx`.
@@ -291,4 +317,4 @@ npx playwright install --with-deps chromium
 <!-- LICENSE -->
 ## License
 
-Distributed under the MIT License. See `LICENSE.txt` for more information.
+Distributed under the MIT License. See `LICENSE` for more information.
