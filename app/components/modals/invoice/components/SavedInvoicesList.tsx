@@ -21,7 +21,10 @@ import {
 import { BaseButton } from "@/app/components";
 
 // Contexts
-import { useSavedInvoicesListContext } from "@/contexts/InvoiceContext";
+import {
+  useSavedInvoicesListActions,
+  useSavedInvoicesListData,
+} from "@/contexts/InvoiceContext";
 import { useTranslationContext } from "@/contexts/TranslationContext";
 
 // Helpers
@@ -185,8 +188,8 @@ const toAmountNumber = (value: unknown) => {
 };
 
 const SavedInvoicesList = ({ setModalState }: SavedInvoicesListProps) => {
+  const { savedInvoices, getCachedPdfMeta } = useSavedInvoicesListData();
   const {
-    savedInvoices,
     onFormSubmit,
     deleteInvoice,
     duplicateInvoice,
@@ -196,8 +199,7 @@ const SavedInvoicesList = ({ setModalState }: SavedInvoicesListProps) => {
     setInvoiceRecurring,
     generateRecurringInvoice,
     restorePdfFromCache,
-    getCachedPdfMeta,
-  } = useSavedInvoicesListContext();
+  } = useSavedInvoicesListActions();
 
   const { reset } = useFormContext<InvoiceType>();
   const { _t } = useTranslationContext();

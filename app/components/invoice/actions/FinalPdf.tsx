@@ -7,7 +7,7 @@ import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { BaseButton, SendPdfToEmailModal, Subheading } from "@/app/components";
 
 // Contexts
-import { useInvoiceContext } from "@/contexts/InvoiceContext";
+import { useFinalPdfContext } from "@/contexts/InvoiceContext";
 
 // Icons
 import {
@@ -28,7 +28,7 @@ export default function FinalPdf() {
         printPdf,
         saveInvoice,
         sendPdfToMail,
-    } = useInvoiceContext();
+    } = useFinalPdfContext();
 
     return (
         <>
