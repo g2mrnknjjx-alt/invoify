@@ -11,6 +11,8 @@ Invoify is a local-first invoice and quote generator built with Next.js App Rout
   - [Technologies](#technologies)
   - [Feature Highlights](#feature-highlights)
   - [Architecture](#architecture)
+  - [Deployment and Environments](#deployment-and-environments)
+  - [Vercel Environment Checklist](#vercel-environment-checklist)
   - [Sync Behavior](#sync-behavior)
   - [Storage and Migration Notes](#storage-and-migration-notes)
   - [Getting Started](#getting-started)
@@ -18,6 +20,10 @@ Invoify is a local-first invoice and quote generator built with Next.js App Rout
     - [Installation](#installation)
   - [Quality Checks](#quality-checks)
   - [Test Matrix](#test-matrix)
+  - [Release and Branching](#release-and-branching)
+  - [Supabase Free-Plan Guardrails](#supabase-free-plan-guardrails)
+  - [Supabase Setup (Authenticated Sync)](#supabase-setup-authenticated-sync)
+  - [Troubleshooting](#troubleshooting)
   - [Known Limits](#known-limits)
   - [License](#license)
 
@@ -39,7 +45,9 @@ Invoify is a local-first invoice and quote generator built with Next.js App Rout
 - Generate PDFs with template support and browser-side PDF caching.
 - Send PDFs over SMTP with editable subject/body/footer.
 - Save, duplicate, search, filter, and export invoice records.
-- Track status (`draft`, `sent`, `paid`) and payment progress.
+- Track lifecycle status (`draft`, `sent`, `paid`, `accepted`, `declined`, `expired`) and payment progress.
+- View saved-invoice insights (outstanding total, overdue count, sent-but-unpaid count).
+- Persist user defaults (currency, template, locale) and auto-apply them on new invoices.
 - Optional authenticated Supabase sync with conflict handling.
 
 ## Architecture
@@ -50,6 +58,32 @@ Invoify is a local-first invoice and quote generator built with Next.js App Rout
 - `services/invoice/server/*`: route-independent business logic for PDF generation/export/email.
 - `lib/sync/*`: optional cloud snapshot merge/push/pull logic and conflict resolution.
 
+## Deployment and Environments
+
+- Vercel Production is tracked from `master`.
+- Preview deployments are generated for pull requests and non-production branches (including `codex/beta` when used as a beta branch).
+- Required CI checks before merge: `lint`, `unit`, `build`, `e2e`.
+- `NEXT_PUBLIC_*` variables are build-time client variables. Any change requires a redeploy of the environment you are testing.
+- Sentry environment mapping:
+  - local development: `development`
+  - beta branch/deployments: `beta`
+  - production (`master`): `production`
+- Dev DX note: `next.config.js` includes `allowedDevOrigins` for localhost loopback hosts to avoid cross-origin dev warnings.
+
+## Vercel Environment Checklist
+
+When cloud auth/sync appears off in deployed environments, verify this checklist:
+
+1. Set these values in Vercel for both `Preview` and `Production` (unless intentionally disabled in one):
+   - `NEXT_PUBLIC_INVOICE_SYNC_PROVIDER=supabase-rest`
+   - `NEXT_PUBLIC_SUPABASE_URL=https://<project-ref>.supabase.co`
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon-key>`
+2. Confirm the values are not placeholders (for example, not `YOUR_SECRET_VALUE_GOES_HERE`).
+3. Redeploy the same environment you are testing after any `NEXT_PUBLIC_*` change.
+4. Test the correct URL:
+   - Production domain for production config
+   - Preview URL for preview config
+5. If auth still shows off, hard-refresh the browser (`Cmd+Shift+R`) and re-check deployment logs.
 ## Sync Behavior
 
 - Local-first by default (`NEXT_PUBLIC_INVOICE_SYNC_PROVIDER=local`).
@@ -79,7 +113,7 @@ Follow these instructions to get Invoify up and running on your local machine.
 1. Clone the repository:
 
    ```bash
-   git clone https://github.com/g2mrnknjjx-alt/invoify
+   git clone https://github.com/g2mrnknjjx-alt/invoify.git
    cd invoify
    ```
 2. Install dependencies
@@ -127,7 +161,7 @@ Follow these instructions to get Invoify up and running on your local machine.
    `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, and `SENTRY_PROJECT`.
    Recommended Sentry environment mapping:
    local `.env.local` => `development`,
-   beta deployment => `beta` (for example `SENTRY_RELEASE=v0.3.0-beta.1`),
+   beta deployment => `beta`,
    production deployment => `production`.
 4. Start development server
 
@@ -188,51 +222,19 @@ npx playwright install --with-deps chromium
   - Next.js production build validation
 - `npm run test:e2e`
   - Core user workflows and browser integration checks
+  - Corrupted draft recovery boot path
+  - Send/export API error messaging flows
+  - Saved invoice insights and preference reset flows
 
-## Known Limits
+## Release and Branching
 
-- The app is local-first; cloud sync is optional and currently snapshot-based.
-- PDF cache is browser-local (IndexedDB) and is not synced to cloud providers.
-- Email delivery requires valid SMTP configuration (`SMTP_URL` or host/port/user/pass).
-- Aggregated saved-invoice insights are numeric totals and do not currently split by currency.
-
-## New in This Release
-
-- Quote mode end-to-end:
-  - Document type support (`invoice` / `quote`) in form, preview, and templates.
-  - Quote-aware PDF/email language and filenames.
-  - One-click Convert to Invoice action and quote-aware success toasts.
-- Review follow-up reliability fixes:
-  - Tightened `EST/ESTIMATE` invoice-number rewrite to avoid mangling IDs like `ESTONIA-42`.
-  - Send-email payload now uses generated PDF snapshot document type for consistency.
-- Production monitoring with Sentry:
-  - Captures App Router render crashes, API/service exceptions, and client telemetry errors.
-  - Uses `instrumentation.ts` / `instrumentation-client.ts` and `app/global-error.tsx`.
-  - Fully optional: if DSN variables are unset, Sentry stays disabled.
-- Faster startup optimizations:
-  - Split shared helper module into client/server/currency helper files.
-  - Lazy-loaded secondary action modals.
-  - BuyMeACoffee widget now loads with `lazyOnload`.
-  - Signature fonts are no longer preloaded on first render.
-  - Draft form writes are debounced to reduce localStorage churn.
-- PDF cache in browser IndexedDB:
-  - Generated PDFs are cached by invoice number.
-  - Cache retention removes entries older than 90 days.
-  - Cache is capped at 100 PDFs (oldest by `updatedAt` are evicted first).
-  - Saved invoice loader shows cached-PDF badge, size, and cache update time.
-- Workflow features:
-  - Duplicate saved invoice with unique number suffix (`-copy`, `-copy-2`, ...).
-  - Invoice status tracking (`draft`, `sent`, `paid`).
-  - Customer templates for sender/receiver with save/apply/rename/delete actions.
-- Reliability and architecture:
-  - Playwright smoke tests for invoice and template workflows.
-  - ESLint CLI configuration and CI workflow for lint/build/e2e.
-  - Lightweight client telemetry for runtime, PDF, and email failures.
-  - Worker-first PDF generation request path with direct-fetch fallback.
-  - Cloud-sync interface layer with `supabase-rest` option and free-plan guardrails.
-  - Sync is debounced and deduplicated to reduce write volume.
-  - Sync snapshots are capped by item count and payload size.
-  - Cloud sync now pulls on authenticated sessions, merges local/cloud by `updatedAt`, and exposes a conflict-resolution modal when records diverge.
+- Versioned releases are published using Git tags and GitHub Releases.
+- Use the GitHub Releases page for version-specific changelogs:
+  - [https://github.com/g2mrnknjjx-alt/invoify/releases](https://github.com/g2mrnknjjx-alt/invoify/releases)
+- Recommended branch flow:
+  - feature work on `codex/*` branches
+  - PR merge into `master`
+  - optional `master -> codex/beta` sync PR when beta should mirror production
 
 ## Supabase Free-Plan Guardrails
 
@@ -268,29 +270,6 @@ npx playwright install --with-deps chromium
    - Unauthenticated users stay fully local and sync attempts are skipped (telemetry event only).
    - Use the top-right `Sign In` button in the app navbar to authenticate with Supabase Auth.
 
-## Local Data and Migration
-
-- Draft:
-  - Current key: `invoify:invoiceDraft:v2`
-  - Legacy key: `invoify:invoiceDraft`
-- Saved invoices:
-  - Legacy key: `savedInvoices`
-  - Mid key: `invoify:savedInvoices:v2`
-  - Current key: `invoify:savedInvoices:v3`
-  - Migration runs automatically on read and is idempotent.
-- Customer templates:
-  - Legacy key: `invoify:customerTemplates:v1`
-  - Current key: `invoify:customerTemplates:v2`
-- User preferences:
-  - `invoify:userPreferences:v1`
-- Client telemetry:
-  - `invoify:telemetry:v1`
-- Corruption backups:
-  - `invoify:backup:*`
-- PDF cache (IndexedDB):
-  - DB: `invoify-client-cache-v1`
-  - Store: `pdfs`
-
 ## Troubleshooting
 
 - Clear only saved invoices:
@@ -313,6 +292,25 @@ npx playwright install --with-deps chromium
 - Sentry disabled unexpectedly:
   - Verify `NEXT_PUBLIC_SENTRY_DSN` (browser) and/or `SENTRY_DSN` (server) are set.
   - Rebuild after changing env variables (`npm run build`).
+- `Auth Off` in a deployed environment:
+  - Verify `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` are set for the same Vercel environment (`Preview` or `Production`) as the URL being tested.
+  - Verify `NEXT_PUBLIC_INVOICE_SYNC_PROVIDER=supabase-rest`.
+  - Redeploy after changing any `NEXT_PUBLIC_*` variable.
+
+## Known Limits
+
+- The app is local-first; cloud sync is optional and currently snapshot-based.
+- PDF cache is browser-local (IndexedDB) and is not synced to cloud providers.
+- Email delivery requires valid SMTP configuration (`SMTP_URL` or host/port/user/pass).
+- Aggregated saved-invoice insights are numeric totals and do not currently split by currency.
+- Vercel password protection is plan-dependent and may require an upgraded plan for direct password-based gates.
+
+## Known Limits
+
+- The app is local-first; cloud sync is optional and currently snapshot-based.
+- PDF cache is browser-local (IndexedDB) and is not synced to cloud providers.
+- Email delivery requires valid SMTP configuration (`SMTP_URL` or host/port/user/pass).
+- Aggregated saved-invoice insights are numeric totals and do not currently split by currency.
 
 <!-- LICENSE -->
 ## License
