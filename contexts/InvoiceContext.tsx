@@ -114,6 +114,14 @@ type InvoiceSyncContextValue = Pick<
   | "resolveSyncConflict"
   | "resolveSyncConflictsWithDefaults"
 >;
+type InvoiceSyncDataContextValue = Pick<
+  InvoiceSyncContextValue,
+  "syncStatus" | "syncConflicts"
+>;
+type InvoiceSyncActionsContextValue = Omit<
+  InvoiceSyncContextValue,
+  "syncStatus" | "syncConflicts"
+>;
 type CustomerTemplatesContextValue = Pick<
   InvoiceContextValue,
   | "customerTemplates"
@@ -121,6 +129,14 @@ type CustomerTemplatesContextValue = Pick<
   | "applyCustomerTemplate"
   | "renameCustomerTemplate"
   | "deleteCustomerTemplate"
+>;
+type CustomerTemplatesDataContextValue = Pick<
+  CustomerTemplatesContextValue,
+  "customerTemplates"
+>;
+type CustomerTemplatesActionsContextValue = Omit<
+  CustomerTemplatesContextValue,
+  "customerTemplates"
 >;
 
 type SavedInvoicesListContextValue = Pick<
@@ -174,15 +190,19 @@ const defaultInvoiceImportExportContext: InvoiceImportExportContextValue = {
   importInvoice: defaultInvoiceContext.importInvoice,
   exportInvoiceAs: defaultInvoiceContext.exportInvoiceAs,
 };
-const defaultInvoiceSyncContext: InvoiceSyncContextValue = {
+const defaultInvoiceSyncDataContext: InvoiceSyncDataContextValue = {
   syncStatus: defaultInvoiceContext.syncStatus,
   syncConflicts: defaultInvoiceContext.syncConflicts,
+};
+const defaultInvoiceSyncActionsContext: InvoiceSyncActionsContextValue = {
   resolveSyncConflict: defaultInvoiceContext.resolveSyncConflict,
   resolveSyncConflictsWithDefaults:
     defaultInvoiceContext.resolveSyncConflictsWithDefaults,
 };
-const defaultCustomerTemplatesContext: CustomerTemplatesContextValue = {
+const defaultCustomerTemplatesDataContext: CustomerTemplatesDataContextValue = {
   customerTemplates: defaultInvoiceContext.customerTemplates,
+};
+const defaultCustomerTemplatesActionsContext: CustomerTemplatesActionsContextValue = {
   saveCustomerTemplate: defaultInvoiceContext.saveCustomerTemplate,
   applyCustomerTemplate: defaultInvoiceContext.applyCustomerTemplate,
   renameCustomerTemplate: defaultInvoiceContext.renameCustomerTemplate,
@@ -211,8 +231,12 @@ const FinalPdfContext = createContext(defaultFinalPdfContext);
 const InvoiceActionsContext = createContext(defaultInvoiceActionsContext);
 const InvoiceSubmissionContext = createContext(defaultInvoiceSubmissionContext);
 const InvoiceImportExportContext = createContext(defaultInvoiceImportExportContext);
-const InvoiceSyncContext = createContext(defaultInvoiceSyncContext);
-const CustomerTemplatesContext = createContext(defaultCustomerTemplatesContext);
+const InvoiceSyncDataContext = createContext(defaultInvoiceSyncDataContext);
+const InvoiceSyncActionsContext = createContext(defaultInvoiceSyncActionsContext);
+const CustomerTemplatesDataContext = createContext(defaultCustomerTemplatesDataContext);
+const CustomerTemplatesActionsContext = createContext(
+  defaultCustomerTemplatesActionsContext
+);
 const SavedInvoicesListDataContext = createContext(
   defaultSavedInvoicesListDataContext
 );
@@ -249,11 +273,45 @@ export const useInvoiceImportExportContext = () => {
 };
 
 export const useInvoiceSyncContext = () => {
-  return useContext(InvoiceSyncContext);
+  const data = useInvoiceSyncData();
+  const actions = useInvoiceSyncActions();
+
+  return useMemo(
+    () => ({
+      ...data,
+      ...actions,
+    }),
+    [actions, data]
+  );
+};
+
+export const useInvoiceSyncData = () => {
+  return useContext(InvoiceSyncDataContext);
+};
+
+export const useInvoiceSyncActions = () => {
+  return useContext(InvoiceSyncActionsContext);
 };
 
 export const useCustomerTemplatesContext = () => {
-  return useContext(CustomerTemplatesContext);
+  const data = useCustomerTemplatesData();
+  const actions = useCustomerTemplatesActions();
+
+  return useMemo(
+    () => ({
+      ...data,
+      ...actions,
+    }),
+    [actions, data]
+  );
+};
+
+export const useCustomerTemplatesData = () => {
+  return useContext(CustomerTemplatesDataContext);
+};
+
+export const useCustomerTemplatesActions = () => {
+  return useContext(CustomerTemplatesActionsContext);
 };
 
 export const useSavedInvoicesListContext = () => {
@@ -479,23 +537,31 @@ export const InvoiceContextProvider = ({ children }: InvoiceContextProviderProps
       pdfActions.invoicePdfLoading,
     ]
   );
-  const invoiceSyncContextValue = useMemo(
+  const invoiceSyncDataContextValue = useMemo(
     () => ({
       syncStatus: syncState.syncStatus,
       syncConflicts: syncState.syncConflicts,
+    }),
+    [syncState.syncConflicts, syncState.syncStatus]
+  );
+  const invoiceSyncActionsContextValue = useMemo(
+    () => ({
       resolveSyncConflict: syncState.resolveSyncConflict,
       resolveSyncConflictsWithDefaults: syncState.resolveSyncConflictsWithDefaults,
     }),
     [
       syncState.resolveSyncConflict,
       syncState.resolveSyncConflictsWithDefaults,
-      syncState.syncConflicts,
-      syncState.syncStatus,
     ]
   );
-  const customerTemplatesContextValue = useMemo(
+  const customerTemplatesDataContextValue = useMemo(
     () => ({
       customerTemplates: customerTemplatesState.customerTemplates,
+    }),
+    [customerTemplatesState.customerTemplates]
+  );
+  const customerTemplatesActionsContextValue = useMemo(
+    () => ({
       saveCustomerTemplate: customerTemplatesState.saveCustomerTemplate,
       applyCustomerTemplate: customerTemplatesState.applyCustomerTemplate,
       renameCustomerTemplate: customerTemplatesState.renameCustomerTemplate,
@@ -503,7 +569,6 @@ export const InvoiceContextProvider = ({ children }: InvoiceContextProviderProps
     }),
     [
       customerTemplatesState.applyCustomerTemplate,
-      customerTemplatesState.customerTemplates,
       customerTemplatesState.deleteCustomerTemplate,
       customerTemplatesState.renameCustomerTemplate,
       customerTemplatesState.saveCustomerTemplate,
@@ -550,21 +615,29 @@ export const InvoiceContextProvider = ({ children }: InvoiceContextProviderProps
             <InvoiceActionsContext.Provider value={invoiceActionsContextValue}>
               <InvoiceSubmissionContext.Provider value={invoiceSubmissionContextValue}>
                 <InvoiceImportExportContext.Provider value={invoiceImportExportContextValue}>
-                  <InvoiceSyncContext.Provider value={invoiceSyncContextValue}>
-                    <CustomerTemplatesContext.Provider
-                      value={customerTemplatesContextValue}
+                  <InvoiceSyncDataContext.Provider value={invoiceSyncDataContextValue}>
+                    <InvoiceSyncActionsContext.Provider
+                      value={invoiceSyncActionsContextValue}
                     >
-                      <SavedInvoicesListDataContext.Provider
-                        value={savedInvoicesListDataContextValue}
+                      <CustomerTemplatesDataContext.Provider
+                        value={customerTemplatesDataContextValue}
                       >
-                        <SavedInvoicesListActionsContext.Provider
-                          value={savedInvoicesListActionsContextValue}
+                        <CustomerTemplatesActionsContext.Provider
+                          value={customerTemplatesActionsContextValue}
                         >
-                          {children}
-                        </SavedInvoicesListActionsContext.Provider>
-                      </SavedInvoicesListDataContext.Provider>
-                    </CustomerTemplatesContext.Provider>
-                  </InvoiceSyncContext.Provider>
+                          <SavedInvoicesListDataContext.Provider
+                            value={savedInvoicesListDataContextValue}
+                          >
+                            <SavedInvoicesListActionsContext.Provider
+                              value={savedInvoicesListActionsContextValue}
+                            >
+                              {children}
+                            </SavedInvoicesListActionsContext.Provider>
+                          </SavedInvoicesListDataContext.Provider>
+                        </CustomerTemplatesActionsContext.Provider>
+                      </CustomerTemplatesDataContext.Provider>
+                    </InvoiceSyncActionsContext.Provider>
+                  </InvoiceSyncDataContext.Provider>
                 </InvoiceImportExportContext.Provider>
               </InvoiceSubmissionContext.Provider>
             </InvoiceActionsContext.Provider>

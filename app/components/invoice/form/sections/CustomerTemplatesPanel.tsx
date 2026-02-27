@@ -18,20 +18,23 @@ import BaseButton from "@/app/components/reusables/BaseButton";
 import Subheading from "@/app/components/reusables/Subheading";
 
 // Contexts
-import { useCustomerTemplatesContext } from "@/contexts/InvoiceContext";
+import {
+  useCustomerTemplatesActions,
+  useCustomerTemplatesData,
+} from "@/contexts/InvoiceContext";
 import { useTranslationContext } from "@/contexts/TranslationContext";
 
 // Icons
 import { Check, Pencil, Save, Trash2 } from "lucide-react";
 
 const CustomerTemplatesPanel = () => {
+  const { customerTemplates } = useCustomerTemplatesData();
   const {
-    customerTemplates,
     saveCustomerTemplate,
     applyCustomerTemplate,
     renameCustomerTemplate,
     deleteCustomerTemplate,
-  } = useCustomerTemplatesContext();
+  } = useCustomerTemplatesActions();
 
   const { _t } = useTranslationContext();
 
