@@ -84,7 +84,6 @@ When cloud auth/sync appears off in deployed environments, verify this checklist
    - Production domain for production config
    - Preview URL for preview config
 5. If auth still shows off, hard-refresh the browser (`Cmd+Shift+R`) and re-check deployment logs.
-
 ## Sync Behavior
 
 - Local-first by default (`NEXT_PUBLIC_INVOICE_SYNC_PROVIDER=local`).
@@ -305,6 +304,13 @@ npx playwright install --with-deps chromium
 - Email delivery requires valid SMTP configuration (`SMTP_URL` or host/port/user/pass).
 - Aggregated saved-invoice insights are numeric totals and do not currently split by currency.
 - Vercel password protection is plan-dependent and may require an upgraded plan for direct password-based gates.
+
+## Known Limits
+
+- The app is local-first; cloud sync is optional and currently snapshot-based.
+- PDF cache is browser-local (IndexedDB) and is not synced to cloud providers.
+- Email delivery requires valid SMTP configuration (`SMTP_URL` or host/port/user/pass).
+- Aggregated saved-invoice insights are numeric totals and do not currently split by currency.
 
 <!-- LICENSE -->
 ## License
