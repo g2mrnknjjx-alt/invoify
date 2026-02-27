@@ -10,7 +10,7 @@ import { useFormContext, useWatch } from "react-hook-form";
 import { FinalPdf, LivePreview } from "@/app/components";
 
 // Contexts
-import { useInvoicePdfViewerContext } from "@/contexts/InvoiceContext";
+import { useInvoicePdfViewerState } from "@/contexts/InvoiceContext";
 
 // Types
 import { InvoiceType } from "@/types";
@@ -27,11 +27,11 @@ const LivePreviewContent = () => {
 };
 
 const PdfViewer = () => {
-    const { invoicePdf } = useInvoicePdfViewerContext();
+    const { hasGeneratedPdf } = useInvoicePdfViewerState();
 
     return (
         <div className="my-3">
-            {invoicePdf.size == 0 ? (
+            {!hasGeneratedPdf ? (
                 <LivePreviewContent />
             ) : (
                 <FinalPdf />
