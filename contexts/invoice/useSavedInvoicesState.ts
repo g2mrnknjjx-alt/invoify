@@ -1,14 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { UseFormGetValues, UseFormSetValue } from "react-hook-form";
-
-import {
-  addCustomerTemplate,
-  findCustomerTemplate,
-  readCustomerTemplates,
-  renameCustomerTemplate as renameCustomerTemplateInRecords,
-  removeCustomerTemplate,
-  writeCustomerTemplates,
-} from "@/lib/storage/customerTemplates";
+import { UseFormGetValues } from "react-hook-form";
 import {
   duplicateSavedInvoiceRecord,
   generateNextRecurringInvoice as generateNextRecurringInvoiceInRecords,
@@ -24,7 +15,6 @@ import {
 import { SHORT_DATE_OPTIONS } from "@/lib/variables";
 import { captureClientError } from "@/lib/telemetry/clientTelemetry";
 import {
-  CustomerTemplateRecord,
   InvoiceStatus,
   InvoiceType,
   RecurringFrequency,
@@ -37,15 +27,8 @@ type PersistSavedInvoices = (
   metadata?: Record<string, unknown>
 ) => void;
 
-type PersistCustomerTemplates = (
-  nextRecords: CustomerTemplateRecord[],
-  action: string,
-  metadata?: Record<string, unknown>
-) => void;
-
 type UseSavedInvoicesStateArgs = {
   getValues: UseFormGetValues<InvoiceType>;
-  setValue: UseFormSetValue<InvoiceType>;
   invoicePdf: Blob;
   saveInvoiceSuccess: () => void;
   modifiedInvoiceSuccess: () => void;
@@ -53,16 +36,12 @@ type UseSavedInvoicesStateArgs = {
 
 export const useSavedInvoicesState = ({
   getValues,
-  setValue,
   invoicePdf,
   saveInvoiceSuccess,
   modifiedInvoiceSuccess,
 }: UseSavedInvoicesStateArgs) => {
   const [savedInvoices, setSavedInvoices] = useState<SavedInvoiceRecord[]>([]);
-  const [customerTemplates, setCustomerTemplates] = useState<
-    CustomerTemplateRecord[]
-  >([]);
-  const [isRecordsHydrated, setIsRecordsHydrated] = useState(false);
+  const [isSavedInvoicesHydrated, setIsSavedInvoicesHydrated] = useState(false);
 
   const persistSavedInvoices = useCallback<PersistSavedInvoices>(
     (nextRecords, action, metadata) => {
@@ -82,34 +61,15 @@ export const useSavedInvoicesState = ({
     []
   );
 
-  const persistCustomerTemplates = useCallback<PersistCustomerTemplates>(
-    (nextRecords, action, metadata) => {
-      setCustomerTemplates(nextRecords);
-      const persisted = writeCustomerTemplates(nextRecords);
-      if (!persisted) {
-        captureClientError(
-          "app_error",
-          new Error("Failed to persist customer templates"),
-          {
-            action,
-            ...(metadata || {}),
-          }
-        );
-      }
-    },
-    []
-  );
-
   useEffect(() => {
     try {
       setSavedInvoices(readSavedInvoices());
-      setCustomerTemplates(readCustomerTemplates());
     } catch (error) {
       captureClientError("app_error", error, {
         area: "invoice_context_storage_hydrate",
       });
     } finally {
-      setIsRecordsHydrated(true);
+      setIsSavedInvoicesHydrated(true);
     }
   }, []);
 
@@ -237,80 +197,11 @@ export const useSavedInvoicesState = ({
     [persistSavedInvoices, savedInvoices]
   );
 
-  const saveCustomerTemplate = useCallback(
-    (name: string) => {
-      const trimmedName = name.trim();
-      if (!trimmedName) return;
-
-      const formValues = getValues();
-      const nextTemplates = addCustomerTemplate(
-        customerTemplates,
-        trimmedName,
-        formValues.sender,
-        formValues.receiver
-      );
-
-      persistCustomerTemplates(nextTemplates, "save_template");
-    },
-    [customerTemplates, getValues, persistCustomerTemplates]
-  );
-
-  const applyCustomerTemplate = useCallback(
-    (templateId: string) => {
-      const template = findCustomerTemplate(customerTemplates, templateId);
-      if (!template) return false;
-
-      setValue("sender", template.sender, {
-        shouldDirty: true,
-      });
-
-      setValue("receiver", template.receiver, {
-        shouldDirty: true,
-      });
-
-      return true;
-    },
-    [customerTemplates, setValue]
-  );
-
-  const deleteCustomerTemplate = useCallback(
-    (templateId: string) => {
-      const nextTemplates = removeCustomerTemplate(customerTemplates, templateId);
-      persistCustomerTemplates(nextTemplates, "delete_template", {
-        templateId,
-      });
-    },
-    [customerTemplates, persistCustomerTemplates]
-  );
-
-  const renameCustomerTemplate = useCallback(
-    (templateId: string, name: string) => {
-      const nextTemplates = renameCustomerTemplateInRecords(
-        customerTemplates,
-        templateId,
-        name
-      );
-
-      if (nextTemplates === customerTemplates) {
-        return false;
-      }
-
-      persistCustomerTemplates(nextTemplates, "rename_template", {
-        templateId,
-      });
-      return true;
-    },
-    [customerTemplates, persistCustomerTemplates]
-  );
-
   return {
     savedInvoices,
-    customerTemplates,
-    isRecordsHydrated,
+    isSavedInvoicesHydrated,
     setSavedInvoices,
-    setCustomerTemplates,
     persistSavedInvoices,
-    persistCustomerTemplates,
     saveInvoice,
     deleteInvoice,
     duplicateInvoice,
@@ -319,10 +210,6 @@ export const useSavedInvoicesState = ({
     markInvoiceReminderSent,
     setInvoiceRecurring,
     generateRecurringInvoice,
-    saveCustomerTemplate,
-    applyCustomerTemplate,
-    deleteCustomerTemplate,
-    renameCustomerTemplate,
   };
 };
 

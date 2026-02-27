@@ -5,6 +5,9 @@ import { useFormContext } from "react-hook-form";
 
 import { useAuthContext } from "@/contexts/AuthContext";
 import {
+  useCustomerTemplatesState,
+} from "@/contexts/invoice/useCustomerTemplatesState";
+import {
   useInvoiceDraftPersistence,
 } from "@/contexts/invoice/useInvoiceDraftPersistence";
 import {
@@ -304,21 +307,27 @@ export const InvoiceContextProvider = ({ children }: InvoiceContextProviderProps
 
   const savedState = useSavedInvoicesState({
     getValues,
-    setValue,
     invoicePdf: pdfActions.invoicePdf,
     saveInvoiceSuccess,
     modifiedInvoiceSuccess,
   });
 
+  const customerTemplatesState = useCustomerTemplatesState({
+    getValues,
+    setValue,
+  });
+
   const isStorageHydrated =
-    savedState.isRecordsHydrated && pdfActions.isPdfCacheHydrated;
+    savedState.isSavedInvoicesHydrated &&
+    customerTemplatesState.isCustomerTemplatesHydrated &&
+    pdfActions.isPdfCacheHydrated;
 
   const syncState = useInvoiceSyncState({
     isStorageHydrated,
     savedInvoices: savedState.savedInvoices,
-    customerTemplates: savedState.customerTemplates,
+    customerTemplates: customerTemplatesState.customerTemplates,
     persistSavedInvoices: savedState.persistSavedInvoices,
-    persistCustomerTemplates: savedState.persistCustomerTemplates,
+    persistCustomerTemplates: customerTemplatesState.persistCustomerTemplates,
     accessToken,
     isAuthenticated,
     userId: user?.id || null,
@@ -342,7 +351,7 @@ export const InvoiceContextProvider = ({ children }: InvoiceContextProviderProps
       invoicePdf: pdfActions.invoicePdf,
       invoicePdfLoading: pdfActions.invoicePdfLoading,
       savedInvoices: savedState.savedInvoices,
-      customerTemplates: savedState.customerTemplates,
+      customerTemplates: customerTemplatesState.customerTemplates,
       syncConflicts: syncState.syncConflicts,
       syncStatus: syncState.syncStatus,
       pdfUrl: pdfActions.pdfUrl,
@@ -367,10 +376,10 @@ export const InvoiceContextProvider = ({ children }: InvoiceContextProviderProps
       restorePdfFromCache: pdfActions.restorePdfFromCache,
       getCachedPdfMeta: pdfActions.getCachedPdfMeta,
       hasCachedPdf: pdfActions.hasCachedPdf,
-      saveCustomerTemplate: savedState.saveCustomerTemplate,
-      applyCustomerTemplate: savedState.applyCustomerTemplate,
-      renameCustomerTemplate: savedState.renameCustomerTemplate,
-      deleteCustomerTemplate: savedState.deleteCustomerTemplate,
+      saveCustomerTemplate: customerTemplatesState.saveCustomerTemplate,
+      applyCustomerTemplate: customerTemplatesState.applyCustomerTemplate,
+      renameCustomerTemplate: customerTemplatesState.renameCustomerTemplate,
+      deleteCustomerTemplate: customerTemplatesState.deleteCustomerTemplate,
       resolveSyncConflict: syncState.resolveSyncConflict,
       resolveSyncConflictsWithDefaults: syncState.resolveSyncConflictsWithDefaults,
     }),
@@ -391,16 +400,16 @@ export const InvoiceContextProvider = ({ children }: InvoiceContextProviderProps
       pdfActions.printPdf,
       pdfActions.removeFinalPdf,
       pdfActions.restorePdfFromCache,
-      savedState.applyCustomerTemplate,
-      savedState.customerTemplates,
-      savedState.deleteCustomerTemplate,
+      customerTemplatesState.applyCustomerTemplate,
+      customerTemplatesState.customerTemplates,
+      customerTemplatesState.deleteCustomerTemplate,
+      customerTemplatesState.renameCustomerTemplate,
+      customerTemplatesState.saveCustomerTemplate,
       savedState.deleteInvoice,
       savedState.duplicateInvoice,
       savedState.generateRecurringInvoice,
       savedState.markInvoiceReminderSent,
       savedState.recordInvoicePayment,
-      savedState.renameCustomerTemplate,
-      savedState.saveCustomerTemplate,
       savedState.saveInvoice,
       savedState.savedInvoices,
       savedState.setInvoiceRecurring,
@@ -486,18 +495,18 @@ export const InvoiceContextProvider = ({ children }: InvoiceContextProviderProps
   );
   const customerTemplatesContextValue = useMemo(
     () => ({
-      customerTemplates: savedState.customerTemplates,
-      saveCustomerTemplate: savedState.saveCustomerTemplate,
-      applyCustomerTemplate: savedState.applyCustomerTemplate,
-      renameCustomerTemplate: savedState.renameCustomerTemplate,
-      deleteCustomerTemplate: savedState.deleteCustomerTemplate,
+      customerTemplates: customerTemplatesState.customerTemplates,
+      saveCustomerTemplate: customerTemplatesState.saveCustomerTemplate,
+      applyCustomerTemplate: customerTemplatesState.applyCustomerTemplate,
+      renameCustomerTemplate: customerTemplatesState.renameCustomerTemplate,
+      deleteCustomerTemplate: customerTemplatesState.deleteCustomerTemplate,
     }),
     [
-      savedState.applyCustomerTemplate,
-      savedState.customerTemplates,
-      savedState.deleteCustomerTemplate,
-      savedState.renameCustomerTemplate,
-      savedState.saveCustomerTemplate,
+      customerTemplatesState.applyCustomerTemplate,
+      customerTemplatesState.customerTemplates,
+      customerTemplatesState.deleteCustomerTemplate,
+      customerTemplatesState.renameCustomerTemplate,
+      customerTemplatesState.saveCustomerTemplate,
     ]
   );
 
