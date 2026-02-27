@@ -19,6 +19,7 @@ export const AUTHOR_GITHUB = "https://github.com/al1abb";
 export const GENERATE_PDF_API = "/api/invoice/generate";
 export const SEND_PDF_API = "/api/invoice/send";
 export const EXPORT_INVOICE_API = "/api/invoice/export";
+export const CREATE_PAYMENT_LINK_API = "/api/invoice/payment-link";
 
 /**
  * External API endpoints
@@ -54,6 +55,11 @@ export const SMTP_PASS = process.env.SMTP_PASS;
 export const SMTP_FROM = process.env.SMTP_FROM;
 export const SMTP_FROM_NAME = process.env.SMTP_FROM_NAME;
 export const SMTP_FROM_EMAIL = process.env.SMTP_FROM_EMAIL;
+
+/**
+ * Stripe
+ */
+export const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
 
 /**
  * I18N
@@ -179,6 +185,7 @@ export const FORM_DEFAULT_VALUES = {
       accountName: "",
       accountNumber: "",
     },
+    paymentLinkUrl: "",
     additionalNotes: "",
     paymentTerms: "",
     totalAmountInWords: "",
@@ -258,6 +265,7 @@ export const FORM_FILL_VALUES = {
       accountName: "John Doe",
       accountNumber: "445566998877",
     },
+    paymentLinkUrl: "",
     additionalNotes: "Thank you for your business",
     paymentTerms: "Net 30",
     signature: {

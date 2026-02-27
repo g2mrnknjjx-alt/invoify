@@ -5,16 +5,19 @@ import {
     Head,
     Hr,
     Container,
+    Link,
     Preview,
     Section,
     Text,
 } from "@react-email/components";
 import { Tailwind } from "@react-email/tailwind";
 import { normalizeDocumentType } from "@/lib/invoice/documentType";
+import { normalizePaymentLinkUrl } from "@/lib/invoice/paymentLink";
 
 type SendPdfEmailProps = {
     invoiceNumber: string;
     documentType?: string;
+    paymentLinkUrl?: string;
     body?: string;
     footer?: string;
 };
@@ -32,10 +35,12 @@ const toParagraphLines = (value: string) => {
 export default function SendPdfEmail({
     invoiceNumber,
     documentType,
+    paymentLinkUrl,
     body,
     footer,
 }: SendPdfEmailProps) {
     const normalizedDocumentType = normalizeDocumentType(documentType);
+    const normalizedPaymentLinkUrl = normalizePaymentLinkUrl(paymentLinkUrl);
     const documentLabel = normalizedDocumentType === "quote" ? "Quote" : "Invoice";
     const bodyLines = toParagraphLines(
         body?.trim() || defaultBody(invoiceNumber, documentLabel)
@@ -55,6 +60,15 @@ export default function SendPdfEmail({
                             {bodyLines.map((line, idx) => (
                                 <Text key={`${line}-${idx}`}>{line}</Text>
                             ))}
+
+                            {normalizedPaymentLinkUrl ? (
+                                <Text>
+                                    Pay online:{" "}
+                                    <Link href={normalizedPaymentLinkUrl}>
+                                        {normalizedPaymentLinkUrl}
+                                    </Link>
+                                </Text>
+                            ) : null}
 
                             {footerLines.length > 0 ? (
                                 <>

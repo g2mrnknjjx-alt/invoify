@@ -188,6 +188,10 @@ const normalizeInvoiceDetails = (
         fallbackPaymentInformation.accountNumber
       ),
     },
+    paymentLinkUrl: toStringValue(
+      source.paymentLinkUrl,
+      fallback.paymentLinkUrl || ""
+    ),
     taxDetails: {
       amount: toNumberValue(taxDetailsSource.amount, fallbackTaxDetails.amount),
       taxID: toStringValue(taxDetailsSource.taxID, fallbackTaxDetails.taxID),

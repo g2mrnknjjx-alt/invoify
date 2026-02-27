@@ -119,6 +119,25 @@ describe("/api/invoice/send", () => {
     expect(sendPdfToEmailServiceMock).not.toHaveBeenCalled();
   });
 
+  it("returns validation error for invalid payment link URL", async () => {
+    const formData = new FormData();
+    formData.set("email", "test@example.com");
+    formData.set("invoiceNumber", "INV-1");
+    formData.set("paymentLinkUrl", "not-a-url");
+    formData.set(
+      "invoicePdf",
+      new File(["pdf-content"], "invoice.pdf", { type: "application/pdf" })
+    );
+
+    const req = toRequest(formData);
+    const res = await POST(req);
+    const payload = await res.json();
+
+    expect(res.status).toBe(400);
+    expect(payload.error.code).toBe("validation_error");
+    expect(sendPdfToEmailServiceMock).not.toHaveBeenCalled();
+  });
+
   it("calls email service for valid payload", async () => {
     sendPdfToEmailServiceMock.mockResolvedValueOnce(undefined);
 
@@ -156,6 +175,7 @@ describe("/api/invoice/send", () => {
     formData.set("subject", "Custom subject");
     formData.set("body", "Custom body line");
     formData.set("footer", "Ray Harrison");
+    formData.set("paymentLinkUrl", "https://checkout.stripe.com/pay/cs_test_123");
     formData.set(
       "invoicePdf",
       new File(["pdf-content"], "client_invoice.pdf", { type: "application/pdf" })
@@ -173,6 +193,7 @@ describe("/api/invoice/send", () => {
         subject: "Custom subject",
         body: "Custom body line",
         footer: "Ray Harrison",
+        paymentLinkUrl: "https://checkout.stripe.com/pay/cs_test_123",
       })
     );
   });

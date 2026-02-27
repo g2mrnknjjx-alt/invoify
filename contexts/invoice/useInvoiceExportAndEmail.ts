@@ -3,6 +3,7 @@ import { UseFormGetValues, UseFormReset } from "react-hook-form";
 
 import { toApiErrorMessage } from "@/lib/contracts/invoiceApi";
 import { normalizeDocumentType } from "@/lib/invoice/documentType";
+import { normalizePaymentLinkUrl } from "@/lib/invoice/paymentLink";
 import { PdfFilenameMeta, toPdfFilename } from "@/lib/invoice/pdfFilename";
 import {
   captureClientError,
@@ -73,6 +74,9 @@ export const useInvoiceExportAndEmail = ({
       const documentType = normalizeDocumentType(
         filenameMeta.documentType ?? currentFormValues.details.documentType
       );
+      const paymentLinkUrl = normalizePaymentLinkUrl(
+        currentFormValues.details.paymentLinkUrl
+      );
       const attachmentFilename = toPdfFilename(filenameMeta);
 
       const fd = new FormData();
@@ -80,6 +84,9 @@ export const useInvoiceExportAndEmail = ({
       fd.append("invoicePdf", invoicePdf, attachmentFilename);
       fd.append("invoiceNumber", invoiceNumber);
       fd.append("documentType", documentType);
+      if (paymentLinkUrl) {
+        fd.append("paymentLinkUrl", paymentLinkUrl);
+      }
       if (messageOptions?.subject?.trim()) {
         fd.append("subject", messageOptions.subject.trim());
       }
