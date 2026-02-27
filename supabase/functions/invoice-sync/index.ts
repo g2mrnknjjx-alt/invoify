@@ -4,7 +4,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 type SavedInvoiceRecord = {
   id: string;
   invoiceNumber: string;
-  status: "draft" | "sent" | "paid";
+  status: "draft" | "sent" | "paid" | "accepted" | "declined" | "expired";
   createdAt: number;
   updatedAt: number;
   data: Record<string, unknown>;
@@ -37,13 +37,26 @@ const isObject = (value: unknown): value is Record<string, unknown> => {
   return typeof value === "object" && value !== null;
 };
 
+const isValidSavedInvoiceStatus = (
+  value: unknown
+): value is SavedInvoiceRecord["status"] => {
+  return (
+    value === "draft" ||
+    value === "sent" ||
+    value === "paid" ||
+    value === "accepted" ||
+    value === "declined" ||
+    value === "expired"
+  );
+};
+
 const isValidSavedInvoiceRecord = (value: unknown): value is SavedInvoiceRecord => {
   if (!isObject(value)) return false;
 
   return (
     typeof value.id === "string" &&
     typeof value.invoiceNumber === "string" &&
-    (value.status === "draft" || value.status === "sent" || value.status === "paid") &&
+    isValidSavedInvoiceStatus(value.status) &&
     typeof value.createdAt === "number" &&
     typeof value.updatedAt === "number" &&
     isObject(value.data)
