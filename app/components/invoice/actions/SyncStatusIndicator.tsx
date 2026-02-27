@@ -3,7 +3,7 @@
 import React from "react";
 
 import { Badge } from "@/components/ui/badge";
-import { useInvoiceSyncContext } from "@/contexts/InvoiceContext";
+import { useInvoiceSyncData } from "@/contexts/InvoiceContext";
 import { useTranslationContext } from "@/contexts/TranslationContext";
 import { SyncState } from "@/types";
 
@@ -19,7 +19,7 @@ const toBadgeVariant = (state: SyncState): "default" | "secondary" | "destructiv
 };
 
 const SyncStatusIndicator = () => {
-  const { syncStatus, syncConflicts } = useInvoiceSyncContext();
+  const { syncStatus, syncConflicts } = useInvoiceSyncData();
   const { _t } = useTranslationContext();
 
   const hasConflicts = syncConflicts.length > 0;
