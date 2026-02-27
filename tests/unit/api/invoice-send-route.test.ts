@@ -59,6 +59,23 @@ describe("/api/invoice/send", () => {
     expect(sendPdfToEmailServiceMock).not.toHaveBeenCalled();
   });
 
+  it("returns validation error for missing invoice number", async () => {
+    const formData = new FormData();
+    formData.set("email", "test@example.com");
+    formData.set(
+      "invoicePdf",
+      new File(["pdf-content"], "invoice.pdf", { type: "application/pdf" })
+    );
+
+    const req = toRequest(formData);
+    const res = await POST(req);
+    const payload = await res.json();
+
+    expect(res.status).toBe(400);
+    expect(payload.error.code).toBe("validation_error");
+    expect(sendPdfToEmailServiceMock).not.toHaveBeenCalled();
+  });
+
   it("returns validation error for oversized attachment", async () => {
     const oversizedFile = new File(
       [new Uint8Array(MAX_EMAIL_ATTACHMENT_BYTES + 1)],
@@ -75,6 +92,25 @@ describe("/api/invoice/send", () => {
 
     const req = toRequest(formData);
 
+    const res = await POST(req);
+    const payload = await res.json();
+
+    expect(res.status).toBe(400);
+    expect(payload.error.code).toBe("validation_error");
+    expect(sendPdfToEmailServiceMock).not.toHaveBeenCalled();
+  });
+
+  it("returns validation error for unsupported document type", async () => {
+    const formData = new FormData();
+    formData.set("email", "test@example.com");
+    formData.set("invoiceNumber", "INV-1");
+    formData.set("documentType", "proposal");
+    formData.set(
+      "invoicePdf",
+      new File(["pdf-content"], "invoice.pdf", { type: "application/pdf" })
+    );
+
+    const req = toRequest(formData);
     const res = await POST(req);
     const payload = await res.json();
 
@@ -116,6 +152,7 @@ describe("/api/invoice/send", () => {
     const formData = new FormData();
     formData.set("email", "test@example.com");
     formData.set("invoiceNumber", "INV-2");
+    formData.set("documentType", "quote");
     formData.set("subject", "Custom subject");
     formData.set("body", "Custom body line");
     formData.set("footer", "Ray Harrison");
@@ -132,10 +169,36 @@ describe("/api/invoice/send", () => {
       expect.objectContaining({
         email: "test@example.com",
         invoiceNumber: "INV-2",
+        documentType: "quote",
         subject: "Custom subject",
         body: "Custom body line",
         footer: "Ray Harrison",
       })
     );
+  });
+
+  it("returns structured 500 error when send service throws unexpectedly", async () => {
+    sendPdfToEmailServiceMock.mockRejectedValueOnce(new Error("boom"));
+
+    const formData = new FormData();
+    formData.set("email", "test@example.com");
+    formData.set("invoiceNumber", "INV-500");
+    formData.set(
+      "invoicePdf",
+      new File(["pdf-content"], "invoice.pdf", { type: "application/pdf" })
+    );
+
+    const req = toRequest(formData);
+    const res = await POST(req);
+    const payload = await res.json();
+
+    expect(res.status).toBe(500);
+    expect(payload).toMatchObject({
+      error: {
+        code: "send_email_error",
+        message: "Failed to send email",
+      },
+    });
+    expect(payload.error.details).toBeUndefined();
   });
 });

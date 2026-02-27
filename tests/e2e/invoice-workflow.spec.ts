@@ -2,6 +2,8 @@ import { expect, test, type Page } from "@playwright/test";
 
 const DRAFT_KEY = "invoify:invoiceDraft";
 const DRAFT_KEY_V2 = "invoify:invoiceDraft:v2";
+const SAVED_INVOICES_KEY_V3 = "invoify:savedInvoices:v3";
+const USER_PREFERENCES_KEY_V1 = "invoify:userPreferences:v1";
 const MOCK_PDF =
   "%PDF-1.4\n1 0 obj\n<<>>\nendobj\ntrailer\n<<>>\n%%EOF";
 
@@ -75,6 +77,118 @@ const createDraft = (invoiceNumber: string) => ({
 type DraftInitPayload = {
   draftValue: ReturnType<typeof createDraft>;
   draftKey: string;
+};
+
+type SavedInvoicesInitPayload = {
+  savedInvoicesKey: string;
+  records: Array<Record<string, unknown>>;
+};
+
+type UserPreferencesInitPayload = {
+  preferencesKey: string;
+  preferences: {
+    defaultCurrency: string;
+    defaultTemplateId: number;
+    defaultLocale: string;
+  };
+};
+
+const installSavedInvoicesPayload = async (
+  records: Array<Record<string, unknown>>,
+  page: Page
+) => {
+  await page.addInitScript(
+    ({ savedInvoicesKey, records: storedRecords }: SavedInvoicesInitPayload) => {
+      window.localStorage.setItem(
+        savedInvoicesKey,
+        JSON.stringify({
+          version: 3,
+          updatedAt: Date.now(),
+          records: storedRecords,
+        })
+      );
+    },
+    {
+      savedInvoicesKey: SAVED_INVOICES_KEY_V3,
+      records,
+    }
+  );
+};
+
+const installUserPreferences = async (
+  preferences: UserPreferencesInitPayload["preferences"],
+  page: Page
+) => {
+  await page.addInitScript(
+    ({ preferencesKey, preferences: storedPreferences }: UserPreferencesInitPayload) => {
+      window.localStorage.setItem(
+        preferencesKey,
+        JSON.stringify(storedPreferences)
+      );
+    },
+    {
+      preferencesKey: USER_PREFERENCES_KEY_V1,
+      preferences,
+    }
+  );
+};
+
+const createSavedInvoiceRecord = ({
+  id,
+  invoiceNumber,
+  status,
+  totalAmount,
+  amountPaid,
+  dueDateIso,
+  documentType = "invoice",
+}: {
+  id: string;
+  invoiceNumber: string;
+  status: "draft" | "sent" | "paid" | "accepted" | "declined" | "expired";
+  totalAmount: number;
+  amountPaid: number;
+  dueDateIso: string;
+  documentType?: "invoice" | "quote";
+}) => {
+  const draft = createDraft(invoiceNumber);
+  draft.details.documentType = documentType;
+  draft.details.totalAmount = totalAmount;
+  draft.details.subTotal = totalAmount;
+  draft.details.dueDate = dueDateIso;
+
+  return {
+    id,
+    invoiceNumber,
+    status,
+    createdAt: Date.parse("2026-02-20T10:00:00.000Z"),
+    updatedAt: Date.parse("2026-02-21T10:00:00.000Z"),
+    data: draft,
+    recurring: {
+      enabled: false,
+      frequency: null,
+      baseInvoiceNumber: invoiceNumber,
+      counter: 0,
+      lastIssuedAt: null,
+      nextIssueAt: null,
+    },
+    payment: {
+      amountPaid,
+      lastPaymentAt: null,
+    },
+    reminder: {
+      enabled: true,
+      lastSentAt: null,
+      sendCount: 0,
+      nextReminderAt: null,
+    },
+    timeline: [
+      {
+        id: `${id}-created`,
+        type: "created",
+        at: Date.parse("2026-02-20T10:00:00.000Z"),
+      },
+    ],
+  };
 };
 
 const createLegacyDraftMissingChargeTypes = (invoiceNumber: string) => {
@@ -241,6 +355,80 @@ test.describe("invoice workflow", () => {
     expect(generateCallCount).toBe(1);
   });
 
+  test("send email error shows actionable API message", async ({ page }) => {
+    await installDraft("INV-SEND-ERROR-1", page);
+
+    await page.route("**/api/invoice/generate", async (route) => {
+      await route.fulfill({
+        status: 200,
+        body: MOCK_PDF,
+        headers: {
+          "content-type": "application/pdf",
+        },
+      });
+    });
+
+    await page.route("**/api/invoice/send", async (route) => {
+      await route.fulfill({
+        status: 400,
+        body: JSON.stringify({
+          error: {
+            code: "validation_error",
+            message: "Recipient mailbox rejected by test",
+          },
+        }),
+        headers: {
+          "content-type": "application/json",
+        },
+      });
+    });
+
+    await page.goto("/en");
+    await waitForDraftHydration(page);
+
+    await page.getByRole("button", { name: /5\.\s*Summary/i }).click();
+    await page.getByTestId("generate-pdf-btn").click();
+    await expect(page.getByText("Final PDF:")).toBeVisible();
+
+    await page.getByTestId("send-to-mail-btn").click();
+    await page.getByTestId("send-email-input").fill("client@example.com");
+    await page.getByTestId("confirm-send-email-btn").click();
+
+    await expect(
+      page.getByText("Recipient mailbox rejected by test", { exact: true })
+    ).toBeVisible();
+    await expect(page.getByRole("button", { name: "Try again" })).toBeVisible();
+  });
+
+  test("export error shows actionable API message", async ({ page }) => {
+    await installDraft("INV-EXPORT-ERROR-1", page);
+
+    await page.route("**/api/invoice/export**", async (route) => {
+      await route.fulfill({
+        status: 400,
+        body: JSON.stringify({
+          error: {
+            code: "validation_error",
+            message: "Export payload invalid in test",
+          },
+        }),
+        headers: {
+          "content-type": "application/json",
+        },
+      });
+    });
+
+    await page.goto("/en");
+    await waitForDraftHydration(page);
+
+    await page.getByTestId("export-invoice-btn").click();
+    await page.getByRole("button", { name: "Export as JSON" }).click();
+
+    await expect(
+      page.getByText("Export payload invalid in test", { exact: true })
+    ).toBeVisible();
+  });
+
   test("legacy draft missing charge amount types does not crash on startup", async ({
     page,
   }) => {
@@ -294,6 +482,131 @@ test.describe("invoice workflow", () => {
     );
 
     expect(hasDraftBackup).toBe(true);
+
+    // Recovery should leave the form usable with clean values.
+    const senderNameInput = page.getByPlaceholder("Your name");
+    await expect(senderNameInput).toHaveValue("");
+    await senderNameInput.fill("Recovered Sender");
+    await expect(senderNameInput).toHaveValue("Recovered Sender");
+
+    await page.getByRole("button", { name: /2\.\s*Invoice Details/i }).click();
+    const invoiceNumberInput = page.getByPlaceholder("Invoice number");
+    await invoiceNumberInput.fill("INV-RECOVERED-1");
+    await expect(invoiceNumberInput).toHaveValue("INV-RECOVERED-1");
+  });
+
+  test("saved invoice insights strip summarizes receivables health", async ({
+    page,
+  }) => {
+    const overdueDueDate = new Date(
+      Date.now() - 5 * 24 * 60 * 60 * 1000
+    ).toISOString();
+    const futureDueDate = new Date(
+      Date.now() + 10 * 24 * 60 * 60 * 1000
+    ).toISOString();
+
+    await installSavedInvoicesPayload(
+      [
+        createSavedInvoiceRecord({
+          id: "insight-sent-overdue",
+          invoiceNumber: "INV-INSIGHT-1",
+          status: "sent",
+          totalAmount: 1000,
+          amountPaid: 200,
+          dueDateIso: overdueDueDate,
+        }),
+        createSavedInvoiceRecord({
+          id: "insight-draft-open",
+          invoiceNumber: "INV-INSIGHT-2",
+          status: "draft",
+          totalAmount: 500,
+          amountPaid: 0,
+          dueDateIso: futureDueDate,
+        }),
+        createSavedInvoiceRecord({
+          id: "insight-quote-excluded",
+          invoiceNumber: "QT-INSIGHT-1",
+          status: "sent",
+          totalAmount: 900,
+          amountPaid: 0,
+          dueDateIso: overdueDueDate,
+          documentType: "quote",
+        }),
+      ],
+      page
+    );
+
+    await page.goto("/en");
+    await page.getByTestId("load-invoice-btn").click();
+
+    await expect(
+      page.getByTestId("saved-invoices-insight-total-outstanding")
+    ).toHaveText("1,300.00");
+    await expect(
+      page.getByTestId("saved-invoices-insight-overdue-count")
+    ).toHaveText("1");
+    await expect(
+      page.getByTestId("saved-invoices-insight-sent-unpaid-count")
+    ).toHaveText("1");
+  });
+
+  test("new invoice reapplies stored user preferences defaults", async ({
+    page,
+  }) => {
+    const seededDraft = createDraft("INV-PREF-OLD");
+    seededDraft.details.currency = "USD";
+    seededDraft.details.pdfTemplate = 1;
+    seededDraft.details.language = "English";
+
+    await installDraftPayload(seededDraft, page);
+    await installUserPreferences(
+      {
+        defaultCurrency: "CAD",
+        defaultTemplateId: 2,
+        defaultLocale: "de",
+      },
+      page
+    );
+
+    await page.goto("/en");
+    await expect(page.getByTestId("new-invoice-btn")).toBeVisible();
+
+    await page.waitForFunction(
+      ({ draftKey, invoiceNumber }) => {
+        const raw = window.localStorage.getItem(draftKey);
+        if (!raw) return false;
+
+        try {
+          const parsed = JSON.parse(raw);
+          return parsed?.data?.details?.invoiceNumber === invoiceNumber;
+        } catch {
+          return false;
+        }
+      },
+      {
+        draftKey: DRAFT_KEY_V2,
+        invoiceNumber: "INV-PREF-OLD",
+      }
+    );
+
+    await page.getByTestId("new-invoice-btn").click();
+
+    await page.waitForFunction((draftKey) => {
+      const raw = window.localStorage.getItem(draftKey);
+      if (!raw) return false;
+
+      try {
+        const details = JSON.parse(raw)?.data?.details;
+        return (
+          details?.currency === "CAD" &&
+          details?.pdfTemplate === 2 &&
+          details?.language === "de" &&
+          details?.invoiceNumber === ""
+        );
+      } catch {
+        return false;
+      }
+    }, DRAFT_KEY_V2);
   });
 
   test("download filename is tied to generated PDF and uses client_name_invoice format", async ({

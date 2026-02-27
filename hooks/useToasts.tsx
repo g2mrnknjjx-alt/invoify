@@ -1,7 +1,8 @@
 // ShadCn
 import { ToastAction } from "@/components/ui/toast";
 import { toast } from "@/components/ui/use-toast";
-import { EmailMessageOptions } from "@/types";
+import { normalizeDocumentType } from "@/lib/invoice/documentType";
+import { EmailMessageOptions, ExportTypes } from "@/types";
 
 const useToasts = () => {
     type SendErrorType = {
@@ -14,6 +15,12 @@ const useToasts = () => {
         reason?: string;
     };
 
+    type ExportErrorType = {
+        exportAs: ExportTypes;
+        exportInvoiceAs: (exportAs: ExportTypes) => void;
+        reason?: string;
+    };
+
     const newInvoiceSuccess = () => {
         toast({
             variant: "default",
@@ -22,10 +29,14 @@ const useToasts = () => {
         });
     };
 
-    const pdfGenerationSuccess = () => {
+    const pdfGenerationSuccess = (documentType?: unknown) => {
+        const normalizedDocumentType = normalizeDocumentType(documentType);
+        const documentLabel =
+            normalizedDocumentType === "quote" ? "quote" : "invoice";
+
         toast({
             variant: "default",
-            title: "Your invoice has been generated!",
+            title: `Your ${documentLabel} has been generated!`,
             description:
                 "You can preview, download, or save it from the actions tab",
         });
@@ -90,6 +101,26 @@ const useToasts = () => {
         });
     };
 
+    const exportInvoiceError = ({
+        exportAs,
+        exportInvoiceAs,
+        reason,
+    }: ExportErrorType) => {
+        toast({
+            variant: "destructive",
+            title: "Export failed",
+            description: reason || "Something went wrong while exporting the invoice",
+            action: (
+                <ToastAction
+                    onClick={() => exportInvoiceAs(exportAs)}
+                    altText="Try again"
+                >
+                    Try again
+                </ToastAction>
+            ),
+        });
+    };
+
     return {
         newInvoiceSuccess,
         pdfGenerationSuccess,
@@ -98,6 +129,7 @@ const useToasts = () => {
         sendPdfSuccess,
         sendPdfError,
         importInvoiceError,
+        exportInvoiceError,
     };
 };
 

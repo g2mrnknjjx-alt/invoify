@@ -21,11 +21,12 @@ import {
 import { BaseButton } from "@/app/components";
 
 // Contexts
-import { useInvoiceContext } from "@/contexts/InvoiceContext";
+import { useSavedInvoicesListContext } from "@/contexts/InvoiceContext";
 import { useTranslationContext } from "@/contexts/TranslationContext";
 
 // Helpers
 import { formatNumberWithCommas } from "@/lib/helpers/client";
+import { normalizeDocumentType } from "@/lib/invoice/documentType";
 
 // Types
 import {
@@ -60,6 +61,21 @@ const PAGE_SIZE = 6;
 
 const toDisplayStatus = (status: SavedInvoiceRecord["status"]) => {
   switch (status) {
+    case "accepted":
+      return {
+        labelKey: "savedInvoices.status.accepted",
+        variant: "default" as const,
+      };
+    case "declined":
+      return {
+        labelKey: "savedInvoices.status.declined",
+        variant: "destructive" as const,
+      };
+    case "expired":
+      return {
+        labelKey: "savedInvoices.status.expired",
+        variant: "outline" as const,
+      };
     case "paid":
       return {
         labelKey: "savedInvoices.status.paid",
@@ -77,6 +93,19 @@ const toDisplayStatus = (status: SavedInvoiceRecord["status"]) => {
       };
   }
 };
+
+const STATUS_FILTER_OPTIONS: Array<{
+  value: StatusFilter;
+  labelKey: string;
+}> = [
+  { value: "all", labelKey: "savedInvoices.filterAll" },
+  { value: "draft", labelKey: "savedInvoices.status.draft" },
+  { value: "sent", labelKey: "savedInvoices.status.sent" },
+  { value: "paid", labelKey: "savedInvoices.status.paid" },
+  { value: "accepted", labelKey: "savedInvoices.status.accepted" },
+  { value: "declined", labelKey: "savedInvoices.status.declined" },
+  { value: "expired", labelKey: "savedInvoices.status.expired" },
+];
 
 const toDate = (value: unknown) => {
   const parsed = new Date(String(value ?? ""));
@@ -168,7 +197,7 @@ const SavedInvoicesList = ({ setModalState }: SavedInvoicesListProps) => {
     generateRecurringInvoice,
     restorePdfFromCache,
     getCachedPdfMeta,
-  } = useInvoiceContext();
+  } = useSavedInvoicesListContext();
 
   const { reset } = useFormContext<InvoiceType>();
   const { _t } = useTranslationContext();
@@ -187,20 +216,28 @@ const SavedInvoicesList = ({ setModalState }: SavedInvoicesListProps) => {
 
     return savedInvoices.reduce(
       (acc, record) => {
+        const documentType = normalizeDocumentType(record.data.details.documentType);
+        const isQuote = documentType === "quote";
         const total = toAmountNumber(record.data.details.totalAmount);
         const paid = toAmountNumber(record.payment.amountPaid);
         const balance = Math.max(0, total - paid);
 
-        if (balance > 0) {
+        if (!isQuote && balance > 0) {
           acc.totalOutstanding += balance;
         }
 
         const dueAt = toTimestamp(record.data.details.dueDate);
-        if (record.status !== "paid" && balance > 0 && dueAt && dueAt < now) {
+        if (
+          !isQuote &&
+          record.status !== "paid" &&
+          balance > 0 &&
+          dueAt &&
+          dueAt < now
+        ) {
           acc.overdueCount += 1;
         }
 
-        if (record.status === "sent" && balance > 0) {
+        if (!isQuote && record.status === "sent" && balance > 0) {
           acc.sentButUnpaidCount += 1;
         }
 
@@ -331,7 +368,10 @@ const SavedInvoicesList = ({ setModalState }: SavedInvoicesListProps) => {
               <p className="text-xs text-muted-foreground">
                 {_t("savedInvoices.insights.totalOutstanding")}
               </p>
-              <p className="text-base font-semibold">
+              <p
+                className="text-base font-semibold"
+                data-testid="saved-invoices-insight-total-outstanding"
+              >
                 {formatNumberWithCommas(
                   Number(insights.totalOutstanding.toFixed(2))
                 )}
@@ -344,7 +384,12 @@ const SavedInvoicesList = ({ setModalState }: SavedInvoicesListProps) => {
               <p className="text-xs text-muted-foreground">
                 {_t("savedInvoices.insights.overdueCount")}
               </p>
-              <p className="text-base font-semibold">{insights.overdueCount}</p>
+              <p
+                className="text-base font-semibold"
+                data-testid="saved-invoices-insight-overdue-count"
+              >
+                {insights.overdueCount}
+              </p>
             </CardContent>
           </Card>
 
@@ -353,7 +398,10 @@ const SavedInvoicesList = ({ setModalState }: SavedInvoicesListProps) => {
               <p className="text-xs text-muted-foreground">
                 {_t("savedInvoices.insights.sentUnpaidCount")}
               </p>
-              <p className="text-base font-semibold">
+              <p
+                className="text-base font-semibold"
+                data-testid="saved-invoices-insight-sent-unpaid-count"
+              >
                 {insights.sentButUnpaidCount}
               </p>
             </CardContent>
@@ -382,10 +430,11 @@ const SavedInvoicesList = ({ setModalState }: SavedInvoicesListProps) => {
               <SelectValue placeholder={_t("savedInvoices.filterStatus")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">{_t("savedInvoices.filterAll")}</SelectItem>
-              <SelectItem value="draft">{_t("savedInvoices.status.draft")}</SelectItem>
-              <SelectItem value="sent">{_t("savedInvoices.status.sent")}</SelectItem>
-              <SelectItem value="paid">{_t("savedInvoices.status.paid")}</SelectItem>
+              {STATUS_FILTER_OPTIONS.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {_t(option.labelKey)}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
 
@@ -429,6 +478,12 @@ const SavedInvoicesList = ({ setModalState }: SavedInvoicesListProps) => {
       </div>
 
       {paginatedInvoices.map((record) => {
+        const documentType = normalizeDocumentType(record.data.details.documentType);
+        const isQuote = documentType === "quote";
+        const documentLabel =
+          isQuote
+            ? _t("savedInvoices.documentType.quote")
+            : _t("savedInvoices.documentType.invoice");
         const status = toDisplayStatus(record.status);
         const cacheMeta = getCachedPdfMeta(record.invoiceNumber);
         const testId = toInvoiceTestId(record.invoiceNumber);
@@ -440,7 +495,10 @@ const SavedInvoicesList = ({ setModalState }: SavedInvoicesListProps) => {
 
         const dueAt = toTimestamp(record.data.details.dueDate);
         const isOverdue =
-          record.status !== "paid" && typeof dueAt === "number" && dueAt < Date.now();
+          !isQuote &&
+          record.status !== "paid" &&
+          typeof dueAt === "number" &&
+          dueAt < Date.now();
 
         const recurringFrequency = record.recurring?.frequency ?? null;
         const recurringEnabled = Boolean(record.recurring?.enabled && recurringFrequency);
@@ -464,7 +522,9 @@ const SavedInvoicesList = ({ setModalState }: SavedInvoicesListProps) => {
             <CardContent className="flex flex-col gap-4 md:flex-row md:justify-between">
               <div className="space-y-2">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <p className="font-semibold">Invoice #{record.invoiceNumber}</p>
+                  <p className="font-semibold">
+                    {documentLabel} #{record.invoiceNumber}
+                  </p>
                   <Badge variant={status.variant}>{_t(status.labelKey)}</Badge>
                   {isOverdue && (
                     <Badge variant="destructive">{_t("savedInvoices.overdue")}</Badge>
@@ -507,34 +567,38 @@ const SavedInvoicesList = ({ setModalState }: SavedInvoicesListProps) => {
                       {formatNumberWithCommas(totalAmount)} {currency}
                     </span>
                   </p>
-                  <p>
-                    {_t("savedInvoices.payment.paid")}: {" "}
-                    <span className="font-semibold">
-                      {formatNumberWithCommas(amountPaid)} {currency}
-                    </span>
-                  </p>
-                  <p>
-                    {_t("savedInvoices.payment.balance")}: {" "}
-                    <span className="font-semibold">
-                      {formatNumberWithCommas(balance)} {currency}
-                    </span>
-                  </p>
+                  {!isQuote && (
+                    <>
+                      <p>
+                        {_t("savedInvoices.payment.paid")}: {" "}
+                        <span className="font-semibold">
+                          {formatNumberWithCommas(amountPaid)} {currency}
+                        </span>
+                      </p>
+                      <p>
+                        {_t("savedInvoices.payment.balance")}: {" "}
+                        <span className="font-semibold">
+                          {formatNumberWithCommas(balance)} {currency}
+                        </span>
+                      </p>
+                    </>
+                  )}
 
-                  {recurringEnabled && nextIssueAt && (
+                  {!isQuote && recurringEnabled && nextIssueAt && (
                     <p className="text-sm text-gray-600">
                       {_t("savedInvoices.recurring.nextIssue")}: {" "}
                       {new Date(nextIssueAt).toLocaleString()}
                     </p>
                   )}
 
-                  {reminderLastSentAt && (
+                  {!isQuote && reminderLastSentAt && (
                     <p className="text-sm text-gray-600">
                       {_t("savedInvoices.reminder.lastSent")}: {" "}
                       {new Date(reminderLastSentAt).toLocaleString()}
                     </p>
                   )}
 
-                  {reminderNextAt && (
+                  {!isQuote && reminderNextAt && (
                     <p className="text-sm text-gray-600">
                       {_t("savedInvoices.reminder.next")}: {" "}
                       {new Date(reminderNextAt).toLocaleString()}
@@ -612,7 +676,7 @@ const SavedInvoicesList = ({ setModalState }: SavedInvoicesListProps) => {
                   {_t("savedInvoices.duplicate")}
                 </BaseButton>
 
-                {record.status !== "paid" && (
+                {!isQuote && record.status !== "paid" && (
                   <BaseButton
                     tooltipLabel="Mark invoice as paid"
                     variant="outline"
@@ -624,7 +688,7 @@ const SavedInvoicesList = ({ setModalState }: SavedInvoicesListProps) => {
                   </BaseButton>
                 )}
 
-                {record.status === "paid" && (
+                {!isQuote && record.status === "paid" && (
                   <BaseButton
                     tooltipLabel="Mark invoice as unpaid"
                     variant="outline"
@@ -636,7 +700,55 @@ const SavedInvoicesList = ({ setModalState }: SavedInvoicesListProps) => {
                   </BaseButton>
                 )}
 
-                {balance > 0 && (
+                {isQuote && record.status !== "accepted" && (
+                  <BaseButton
+                    tooltipLabel="Mark quote as accepted"
+                    variant="outline"
+                    size="sm"
+                    data-testid={`saved-quote-mark-accepted-${testId}`}
+                    onClick={() => updateSavedInvoiceStatus(record.id, "accepted")}
+                  >
+                    {_t("savedInvoices.markAccepted")}
+                  </BaseButton>
+                )}
+
+                {isQuote && record.status !== "declined" && (
+                  <BaseButton
+                    tooltipLabel="Mark quote as declined"
+                    variant="outline"
+                    size="sm"
+                    data-testid={`saved-quote-mark-declined-${testId}`}
+                    onClick={() => updateSavedInvoiceStatus(record.id, "declined")}
+                  >
+                    {_t("savedInvoices.markDeclined")}
+                  </BaseButton>
+                )}
+
+                {isQuote && record.status !== "expired" && (
+                  <BaseButton
+                    tooltipLabel="Mark quote as expired"
+                    variant="outline"
+                    size="sm"
+                    data-testid={`saved-quote-mark-expired-${testId}`}
+                    onClick={() => updateSavedInvoiceStatus(record.id, "expired")}
+                  >
+                    {_t("savedInvoices.markExpired")}
+                  </BaseButton>
+                )}
+
+                {isQuote && record.status !== "draft" && (
+                  <BaseButton
+                    tooltipLabel="Reset quote status to draft"
+                    variant="outline"
+                    size="sm"
+                    data-testid={`saved-quote-reset-draft-${testId}`}
+                    onClick={() => updateSavedInvoiceStatus(record.id, "draft")}
+                  >
+                    {_t("savedInvoices.resetToDraft")}
+                  </BaseButton>
+                )}
+
+                {!isQuote && balance > 0 && (
                   <div className="grid grid-cols-1 gap-2">
                     <Input
                       value={paymentInput}
@@ -660,29 +772,31 @@ const SavedInvoicesList = ({ setModalState }: SavedInvoicesListProps) => {
                   </div>
                 )}
 
-                <Select
-                  value={toRecurringSelectValue(recurringFrequency)}
-                  onValueChange={(value) => {
-                    setInvoiceRecurring(record.id, fromRecurringSelectValue(value));
-                  }}
-                >
-                  <SelectTrigger data-testid={`saved-invoice-recurring-${testId}`}>
-                    <SelectValue placeholder={_t("savedInvoices.recurring.label")} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">
-                      {_t("savedInvoices.recurring.none")}
-                    </SelectItem>
-                    <SelectItem value="weekly">
-                      {_t("savedInvoices.recurring.weekly")}
-                    </SelectItem>
-                    <SelectItem value="monthly">
-                      {_t("savedInvoices.recurring.monthly")}
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
+                {!isQuote && (
+                  <Select
+                    value={toRecurringSelectValue(recurringFrequency)}
+                    onValueChange={(value) => {
+                      setInvoiceRecurring(record.id, fromRecurringSelectValue(value));
+                    }}
+                  >
+                    <SelectTrigger data-testid={`saved-invoice-recurring-${testId}`}>
+                      <SelectValue placeholder={_t("savedInvoices.recurring.label")} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">
+                        {_t("savedInvoices.recurring.none")}
+                      </SelectItem>
+                      <SelectItem value="weekly">
+                        {_t("savedInvoices.recurring.weekly")}
+                      </SelectItem>
+                      <SelectItem value="monthly">
+                        {_t("savedInvoices.recurring.monthly")}
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
 
-                {recurringEnabled && (
+                {!isQuote && recurringEnabled && (
                   <BaseButton
                     variant="outline"
                     size="sm"
@@ -693,7 +807,7 @@ const SavedInvoicesList = ({ setModalState }: SavedInvoicesListProps) => {
                   </BaseButton>
                 )}
 
-                {isOverdue && (
+                {!isQuote && isOverdue && (
                   <BaseButton
                     variant="outline"
                     size="sm"
