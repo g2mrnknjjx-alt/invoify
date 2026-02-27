@@ -12,7 +12,10 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useInvoiceSyncContext } from "@/contexts/InvoiceContext";
+import {
+  useInvoiceSyncActions,
+  useInvoiceSyncData,
+} from "@/contexts/InvoiceContext";
 import { useTranslationContext } from "@/contexts/TranslationContext";
 
 const formatDateTime = (timestamp: number) => {
@@ -20,11 +23,9 @@ const formatDateTime = (timestamp: number) => {
 };
 
 const SyncConflictsModal = () => {
-  const {
-    syncConflicts,
-    resolveSyncConflict,
-    resolveSyncConflictsWithDefaults,
-  } = useInvoiceSyncContext();
+  const { syncConflicts } = useInvoiceSyncData();
+  const { resolveSyncConflict, resolveSyncConflictsWithDefaults } =
+    useInvoiceSyncActions();
   const { _t } = useTranslationContext();
   const [open, setOpen] = useState(false);
 

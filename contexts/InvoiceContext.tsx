@@ -5,6 +5,28 @@ import { useFormContext } from "react-hook-form";
 
 import { useAuthContext } from "@/contexts/AuthContext";
 import {
+  defaultInvoiceContext,
+  InvoiceContextValue,
+} from "@/contexts/invoice/invoiceContextDefaults";
+import {
+  CustomerTemplatesActionsContextValue,
+  CustomerTemplatesDataContextValue,
+  FinalPdfContextValue,
+  InvoiceActionsContextValue,
+  InvoiceImportExportContextValue,
+  InvoiceSelectorProviders,
+  InvoiceSubmissionContextValue,
+  InvoiceSyncActionsContextValue,
+  InvoiceSyncDataContextValue,
+  PdfViewerContextValue,
+  PdfViewerStateContextValue,
+  SavedInvoicesListActionsContextValue,
+  SavedInvoicesListDataContextValue,
+} from "@/contexts/invoice/invoiceSelectorContexts";
+import {
+  useCustomerTemplatesState,
+} from "@/contexts/invoice/useCustomerTemplatesState";
+import {
   useInvoiceDraftPersistence,
 } from "@/contexts/invoice/useInvoiceDraftPersistence";
 import {
@@ -14,265 +36,31 @@ import { useInvoicePdfActions } from "@/contexts/invoice/useInvoicePdfActions";
 import { useSavedInvoicesState } from "@/contexts/invoice/useSavedInvoicesState";
 import { useInvoiceSyncState } from "@/contexts/invoice/useInvoiceSyncState";
 import useToasts from "@/hooks/useToasts";
-import {
-  CachedPdfMeta,
-  CustomerTemplateRecord,
-  EmailMessageOptions,
-  ExportTypes,
-  InvoiceStatus,
-  InvoiceType,
-  RecurringFrequency,
-  SavedInvoiceRecord,
-  SyncConflictChoice,
-  SyncConflictSummary,
-  SyncStatus,
-} from "@/types";
-
-const defaultInvoiceContext = {
-  invoicePdf: new Blob(),
-  invoicePdfLoading: false,
-  savedInvoices: [] as SavedInvoiceRecord[],
-  customerTemplates: [] as CustomerTemplateRecord[],
-  syncConflicts: [] as SyncConflictSummary[],
-  syncStatus: {
-    state: "idle",
-    provider: "local",
-    lastAttemptAt: null,
-    lastSuccessAt: null,
-    reason: null,
-    errorMessage: null,
-  } as SyncStatus,
-  pdfUrl: null as string | null,
-  onFormSubmit: (_values: InvoiceType) => {},
-  newInvoice: () => {},
-  generatePdf: async (_data: InvoiceType) => {},
-  removeFinalPdf: () => {},
-  downloadPdf: () => {},
-  printPdf: () => {},
-  previewPdfInTab: () => {},
-  saveInvoice: () => {},
-  deleteInvoice: (_id: string) => {},
-  duplicateInvoice: (_id: string) => {},
-  updateSavedInvoiceStatus: (_id: string, _status: InvoiceStatus) => {},
-  recordInvoicePayment: (_id: string, _amount: number) => false,
-  markInvoiceReminderSent: (_id: string) => false,
-  setInvoiceRecurring: (_id: string, _frequency: RecurringFrequency | null) =>
-    false,
-  generateRecurringInvoice: (_id: string) => false,
-  sendPdfToMail: (
-    _email: string,
-    _messageOptions?: EmailMessageOptions
-  ): Promise<void> => Promise.resolve(),
-  exportInvoiceAs: (_exportAs: ExportTypes) => {},
-  importInvoice: (_file: File) => {},
-  restorePdfFromCache: async (_invoiceNumber: string) => false,
-  getCachedPdfMeta: (_invoiceNumber: string) => null as CachedPdfMeta | null,
-  hasCachedPdf: (_invoiceNumber: string) => false,
-  saveCustomerTemplate: (_name: string) => {},
-  applyCustomerTemplate: (_templateId: string) => false,
-  renameCustomerTemplate: (_templateId: string, _name: string) => false,
-  deleteCustomerTemplate: (_templateId: string) => {},
-  resolveSyncConflict: (_conflictId: string, _choice: SyncConflictChoice) =>
-    false,
-  resolveSyncConflictsWithDefaults: () => 0,
-};
+import { InvoiceType } from "@/types";
 
 export const InvoiceContext = createContext(defaultInvoiceContext);
-
-type InvoiceContextValue = typeof defaultInvoiceContext;
-
-type PdfViewerContextValue = Pick<InvoiceContextValue, "invoicePdf">;
-type PdfViewerStateContextValue = {
-  hasGeneratedPdf: boolean;
-};
-type FinalPdfContextValue = Pick<
-  InvoiceContextValue,
-  | "pdfUrl"
-  | "removeFinalPdf"
-  | "previewPdfInTab"
-  | "downloadPdf"
-  | "printPdf"
-  | "saveInvoice"
-  | "sendPdfToMail"
->;
-type InvoiceActionsContextValue = Pick<
-  InvoiceContextValue,
-  "invoicePdfLoading" | "newInvoice" | "removeFinalPdf"
->;
-type InvoiceSubmissionContextValue = Pick<InvoiceContextValue, "onFormSubmit">;
-type InvoiceImportExportContextValue = Pick<
-  InvoiceContextValue,
-  "invoicePdfLoading" | "importInvoice" | "exportInvoiceAs"
->;
-type InvoiceSyncContextValue = Pick<
-  InvoiceContextValue,
-  | "syncStatus"
-  | "syncConflicts"
-  | "resolveSyncConflict"
-  | "resolveSyncConflictsWithDefaults"
->;
-type CustomerTemplatesContextValue = Pick<
-  InvoiceContextValue,
-  | "customerTemplates"
-  | "saveCustomerTemplate"
-  | "applyCustomerTemplate"
-  | "renameCustomerTemplate"
-  | "deleteCustomerTemplate"
->;
-
-type SavedInvoicesListContextValue = Pick<
-  InvoiceContextValue,
-  | "savedInvoices"
-  | "onFormSubmit"
-  | "deleteInvoice"
-  | "duplicateInvoice"
-  | "updateSavedInvoiceStatus"
-  | "recordInvoicePayment"
-  | "markInvoiceReminderSent"
-  | "setInvoiceRecurring"
-  | "generateRecurringInvoice"
-  | "restorePdfFromCache"
-  | "getCachedPdfMeta"
->;
-type SavedInvoicesListDataContextValue = Pick<
-  SavedInvoicesListContextValue,
-  "savedInvoices" | "getCachedPdfMeta"
->;
-type SavedInvoicesListActionsContextValue = Omit<
-  SavedInvoicesListContextValue,
-  "savedInvoices" | "getCachedPdfMeta"
->;
-
-const defaultPdfViewerContext: PdfViewerContextValue = {
-  invoicePdf: defaultInvoiceContext.invoicePdf,
-};
-const defaultPdfViewerStateContext: PdfViewerStateContextValue = {
-  hasGeneratedPdf: false,
-};
-const defaultFinalPdfContext: FinalPdfContextValue = {
-  pdfUrl: defaultInvoiceContext.pdfUrl,
-  removeFinalPdf: defaultInvoiceContext.removeFinalPdf,
-  previewPdfInTab: defaultInvoiceContext.previewPdfInTab,
-  downloadPdf: defaultInvoiceContext.downloadPdf,
-  printPdf: defaultInvoiceContext.printPdf,
-  saveInvoice: defaultInvoiceContext.saveInvoice,
-  sendPdfToMail: defaultInvoiceContext.sendPdfToMail,
-};
-const defaultInvoiceActionsContext: InvoiceActionsContextValue = {
-  invoicePdfLoading: defaultInvoiceContext.invoicePdfLoading,
-  newInvoice: defaultInvoiceContext.newInvoice,
-  removeFinalPdf: defaultInvoiceContext.removeFinalPdf,
-};
-const defaultInvoiceSubmissionContext: InvoiceSubmissionContextValue = {
-  onFormSubmit: defaultInvoiceContext.onFormSubmit,
-};
-const defaultInvoiceImportExportContext: InvoiceImportExportContextValue = {
-  invoicePdfLoading: defaultInvoiceContext.invoicePdfLoading,
-  importInvoice: defaultInvoiceContext.importInvoice,
-  exportInvoiceAs: defaultInvoiceContext.exportInvoiceAs,
-};
-const defaultInvoiceSyncContext: InvoiceSyncContextValue = {
-  syncStatus: defaultInvoiceContext.syncStatus,
-  syncConflicts: defaultInvoiceContext.syncConflicts,
-  resolveSyncConflict: defaultInvoiceContext.resolveSyncConflict,
-  resolveSyncConflictsWithDefaults:
-    defaultInvoiceContext.resolveSyncConflictsWithDefaults,
-};
-const defaultCustomerTemplatesContext: CustomerTemplatesContextValue = {
-  customerTemplates: defaultInvoiceContext.customerTemplates,
-  saveCustomerTemplate: defaultInvoiceContext.saveCustomerTemplate,
-  applyCustomerTemplate: defaultInvoiceContext.applyCustomerTemplate,
-  renameCustomerTemplate: defaultInvoiceContext.renameCustomerTemplate,
-  deleteCustomerTemplate: defaultInvoiceContext.deleteCustomerTemplate,
-};
-
-const defaultSavedInvoicesListDataContext: SavedInvoicesListDataContextValue = {
-  savedInvoices: defaultInvoiceContext.savedInvoices,
-  getCachedPdfMeta: defaultInvoiceContext.getCachedPdfMeta,
-};
-const defaultSavedInvoicesListActionsContext: SavedInvoicesListActionsContextValue = {
-  onFormSubmit: defaultInvoiceContext.onFormSubmit,
-  deleteInvoice: defaultInvoiceContext.deleteInvoice,
-  duplicateInvoice: defaultInvoiceContext.duplicateInvoice,
-  updateSavedInvoiceStatus: defaultInvoiceContext.updateSavedInvoiceStatus,
-  recordInvoicePayment: defaultInvoiceContext.recordInvoicePayment,
-  markInvoiceReminderSent: defaultInvoiceContext.markInvoiceReminderSent,
-  setInvoiceRecurring: defaultInvoiceContext.setInvoiceRecurring,
-  generateRecurringInvoice: defaultInvoiceContext.generateRecurringInvoice,
-  restorePdfFromCache: defaultInvoiceContext.restorePdfFromCache,
-};
-
-const InvoicePdfViewerContext = createContext(defaultPdfViewerContext);
-const InvoicePdfViewerStateContext = createContext(defaultPdfViewerStateContext);
-const FinalPdfContext = createContext(defaultFinalPdfContext);
-const InvoiceActionsContext = createContext(defaultInvoiceActionsContext);
-const InvoiceSubmissionContext = createContext(defaultInvoiceSubmissionContext);
-const InvoiceImportExportContext = createContext(defaultInvoiceImportExportContext);
-const InvoiceSyncContext = createContext(defaultInvoiceSyncContext);
-const CustomerTemplatesContext = createContext(defaultCustomerTemplatesContext);
-const SavedInvoicesListDataContext = createContext(
-  defaultSavedInvoicesListDataContext
-);
-const SavedInvoicesListActionsContext = createContext(
-  defaultSavedInvoicesListActionsContext
-);
 
 export const useInvoiceContext = () => {
   return useContext(InvoiceContext);
 };
 
-export const useInvoicePdfViewerContext = () => {
-  return useContext(InvoicePdfViewerContext);
-};
-
-export const useInvoicePdfViewerState = () => {
-  return useContext(InvoicePdfViewerStateContext);
-};
-
-export const useFinalPdfContext = () => {
-  return useContext(FinalPdfContext);
-};
-
-export const useInvoiceActionsContext = () => {
-  return useContext(InvoiceActionsContext);
-};
-
-export const useInvoiceSubmissionContext = () => {
-  return useContext(InvoiceSubmissionContext);
-};
-
-export const useInvoiceImportExportContext = () => {
-  return useContext(InvoiceImportExportContext);
-};
-
-export const useInvoiceSyncContext = () => {
-  return useContext(InvoiceSyncContext);
-};
-
-export const useCustomerTemplatesContext = () => {
-  return useContext(CustomerTemplatesContext);
-};
-
-export const useSavedInvoicesListContext = () => {
-  const data = useSavedInvoicesListData();
-  const actions = useSavedInvoicesListActions();
-
-  return useMemo(
-    () => ({
-      ...data,
-      ...actions,
-    }),
-    [actions, data]
-  );
-};
-
-export const useSavedInvoicesListData = () => {
-  return useContext(SavedInvoicesListDataContext);
-};
-
-export const useSavedInvoicesListActions = () => {
-  return useContext(SavedInvoicesListActionsContext);
-};
+export {
+  useCustomerTemplatesActions,
+  useCustomerTemplatesContext,
+  useCustomerTemplatesData,
+  useFinalPdfContext,
+  useInvoiceActionsContext,
+  useInvoiceImportExportContext,
+  useInvoicePdfViewerContext,
+  useInvoicePdfViewerState,
+  useInvoiceSubmissionContext,
+  useInvoiceSyncActions,
+  useInvoiceSyncContext,
+  useInvoiceSyncData,
+  useSavedInvoicesListActions,
+  useSavedInvoicesListContext,
+  useSavedInvoicesListData,
+} from "@/contexts/invoice/invoiceSelectorContexts";
 
 type InvoiceContextProviderProps = {
   children: React.ReactNode;
@@ -304,21 +92,27 @@ export const InvoiceContextProvider = ({ children }: InvoiceContextProviderProps
 
   const savedState = useSavedInvoicesState({
     getValues,
-    setValue,
     invoicePdf: pdfActions.invoicePdf,
     saveInvoiceSuccess,
     modifiedInvoiceSuccess,
   });
 
+  const customerTemplatesState = useCustomerTemplatesState({
+    getValues,
+    setValue,
+  });
+
   const isStorageHydrated =
-    savedState.isRecordsHydrated && pdfActions.isPdfCacheHydrated;
+    savedState.isSavedInvoicesHydrated &&
+    customerTemplatesState.isCustomerTemplatesHydrated &&
+    pdfActions.isPdfCacheHydrated;
 
   const syncState = useInvoiceSyncState({
     isStorageHydrated,
     savedInvoices: savedState.savedInvoices,
-    customerTemplates: savedState.customerTemplates,
+    customerTemplates: customerTemplatesState.customerTemplates,
     persistSavedInvoices: savedState.persistSavedInvoices,
-    persistCustomerTemplates: savedState.persistCustomerTemplates,
+    persistCustomerTemplates: customerTemplatesState.persistCustomerTemplates,
     accessToken,
     isAuthenticated,
     userId: user?.id || null,
@@ -337,12 +131,12 @@ export const InvoiceContextProvider = ({ children }: InvoiceContextProviderProps
     exportInvoiceError,
   });
 
-  const contextValue = useMemo(
+  const contextValue = useMemo<InvoiceContextValue>(
     () => ({
       invoicePdf: pdfActions.invoicePdf,
       invoicePdfLoading: pdfActions.invoicePdfLoading,
       savedInvoices: savedState.savedInvoices,
-      customerTemplates: savedState.customerTemplates,
+      customerTemplates: customerTemplatesState.customerTemplates,
       syncConflicts: syncState.syncConflicts,
       syncStatus: syncState.syncStatus,
       pdfUrl: pdfActions.pdfUrl,
@@ -367,10 +161,10 @@ export const InvoiceContextProvider = ({ children }: InvoiceContextProviderProps
       restorePdfFromCache: pdfActions.restorePdfFromCache,
       getCachedPdfMeta: pdfActions.getCachedPdfMeta,
       hasCachedPdf: pdfActions.hasCachedPdf,
-      saveCustomerTemplate: savedState.saveCustomerTemplate,
-      applyCustomerTemplate: savedState.applyCustomerTemplate,
-      renameCustomerTemplate: savedState.renameCustomerTemplate,
-      deleteCustomerTemplate: savedState.deleteCustomerTemplate,
+      saveCustomerTemplate: customerTemplatesState.saveCustomerTemplate,
+      applyCustomerTemplate: customerTemplatesState.applyCustomerTemplate,
+      renameCustomerTemplate: customerTemplatesState.renameCustomerTemplate,
+      deleteCustomerTemplate: customerTemplatesState.deleteCustomerTemplate,
       resolveSyncConflict: syncState.resolveSyncConflict,
       resolveSyncConflictsWithDefaults: syncState.resolveSyncConflictsWithDefaults,
     }),
@@ -391,16 +185,16 @@ export const InvoiceContextProvider = ({ children }: InvoiceContextProviderProps
       pdfActions.printPdf,
       pdfActions.removeFinalPdf,
       pdfActions.restorePdfFromCache,
-      savedState.applyCustomerTemplate,
-      savedState.customerTemplates,
-      savedState.deleteCustomerTemplate,
+      customerTemplatesState.applyCustomerTemplate,
+      customerTemplatesState.customerTemplates,
+      customerTemplatesState.deleteCustomerTemplate,
+      customerTemplatesState.renameCustomerTemplate,
+      customerTemplatesState.saveCustomerTemplate,
       savedState.deleteInvoice,
       savedState.duplicateInvoice,
       savedState.generateRecurringInvoice,
       savedState.markInvoiceReminderSent,
       savedState.recordInvoicePayment,
-      savedState.renameCustomerTemplate,
-      savedState.saveCustomerTemplate,
       savedState.saveInvoice,
       savedState.savedInvoices,
       savedState.setInvoiceRecurring,
@@ -412,19 +206,19 @@ export const InvoiceContextProvider = ({ children }: InvoiceContextProviderProps
     ]
   );
 
-  const pdfViewerContextValue = useMemo(
+  const pdfViewerContextValue = useMemo<PdfViewerContextValue>(
     () => ({
       invoicePdf: pdfActions.invoicePdf,
     }),
     [pdfActions.invoicePdf]
   );
-  const pdfViewerStateContextValue = useMemo(
+  const pdfViewerStateContextValue = useMemo<PdfViewerStateContextValue>(
     () => ({
       hasGeneratedPdf: pdfActions.invoicePdf.size > 0,
     }),
     [pdfActions.invoicePdf.size]
   );
-  const finalPdfContextValue = useMemo(
+  const finalPdfContextValue = useMemo<FinalPdfContextValue>(
     () => ({
       pdfUrl: pdfActions.pdfUrl,
       removeFinalPdf: pdfActions.removeFinalPdf,
@@ -444,7 +238,7 @@ export const InvoiceContextProvider = ({ children }: InvoiceContextProviderProps
       savedState.saveInvoice,
     ]
   );
-  const invoiceActionsContextValue = useMemo(
+  const invoiceActionsContextValue = useMemo<InvoiceActionsContextValue>(
     () => ({
       invoicePdfLoading: pdfActions.invoicePdfLoading,
       newInvoice: pdfActions.newInvoice,
@@ -452,13 +246,13 @@ export const InvoiceContextProvider = ({ children }: InvoiceContextProviderProps
     }),
     [pdfActions.invoicePdfLoading, pdfActions.newInvoice, pdfActions.removeFinalPdf]
   );
-  const invoiceSubmissionContextValue = useMemo(
+  const invoiceSubmissionContextValue = useMemo<InvoiceSubmissionContextValue>(
     () => ({
       onFormSubmit: pdfActions.onFormSubmit,
     }),
     [pdfActions.onFormSubmit]
   );
-  const invoiceImportExportContextValue = useMemo(
+  const invoiceImportExportContextValue = useMemo<InvoiceImportExportContextValue>(
     () => ({
       invoicePdfLoading: pdfActions.invoicePdfLoading,
       importInvoice: exportAndEmail.importInvoice,
@@ -470,38 +264,47 @@ export const InvoiceContextProvider = ({ children }: InvoiceContextProviderProps
       pdfActions.invoicePdfLoading,
     ]
   );
-  const invoiceSyncContextValue = useMemo(
+  const invoiceSyncDataContextValue = useMemo<InvoiceSyncDataContextValue>(
     () => ({
       syncStatus: syncState.syncStatus,
       syncConflicts: syncState.syncConflicts,
+    }),
+    [syncState.syncConflicts, syncState.syncStatus]
+  );
+  const invoiceSyncActionsContextValue = useMemo<InvoiceSyncActionsContextValue>(
+    () => ({
       resolveSyncConflict: syncState.resolveSyncConflict,
       resolveSyncConflictsWithDefaults: syncState.resolveSyncConflictsWithDefaults,
     }),
     [
       syncState.resolveSyncConflict,
       syncState.resolveSyncConflictsWithDefaults,
-      syncState.syncConflicts,
-      syncState.syncStatus,
     ]
   );
-  const customerTemplatesContextValue = useMemo(
+  const customerTemplatesDataContextValue =
+    useMemo<CustomerTemplatesDataContextValue>(
     () => ({
-      customerTemplates: savedState.customerTemplates,
-      saveCustomerTemplate: savedState.saveCustomerTemplate,
-      applyCustomerTemplate: savedState.applyCustomerTemplate,
-      renameCustomerTemplate: savedState.renameCustomerTemplate,
-      deleteCustomerTemplate: savedState.deleteCustomerTemplate,
+      customerTemplates: customerTemplatesState.customerTemplates,
+    }),
+    [customerTemplatesState.customerTemplates]
+  );
+  const customerTemplatesActionsContextValue =
+    useMemo<CustomerTemplatesActionsContextValue>(
+    () => ({
+      saveCustomerTemplate: customerTemplatesState.saveCustomerTemplate,
+      applyCustomerTemplate: customerTemplatesState.applyCustomerTemplate,
+      renameCustomerTemplate: customerTemplatesState.renameCustomerTemplate,
+      deleteCustomerTemplate: customerTemplatesState.deleteCustomerTemplate,
     }),
     [
-      savedState.applyCustomerTemplate,
-      savedState.customerTemplates,
-      savedState.deleteCustomerTemplate,
-      savedState.renameCustomerTemplate,
-      savedState.saveCustomerTemplate,
+      customerTemplatesState.applyCustomerTemplate,
+      customerTemplatesState.deleteCustomerTemplate,
+      customerTemplatesState.renameCustomerTemplate,
+      customerTemplatesState.saveCustomerTemplate,
     ]
   );
 
-  const savedInvoicesListDataContextValue = useMemo(
+  const savedInvoicesListDataContextValue = useMemo<SavedInvoicesListDataContextValue>(
     () => ({
       savedInvoices: savedState.savedInvoices,
       getCachedPdfMeta: pdfActions.getCachedPdfMeta,
@@ -509,7 +312,8 @@ export const InvoiceContextProvider = ({ children }: InvoiceContextProviderProps
     [pdfActions.getCachedPdfMeta, savedState.savedInvoices]
   );
 
-  const savedInvoicesListActionsContextValue = useMemo(
+  const savedInvoicesListActionsContextValue =
+    useMemo<SavedInvoicesListActionsContextValue>(
     () => ({
       onFormSubmit: pdfActions.onFormSubmit,
       deleteInvoice: savedState.deleteInvoice,
@@ -535,33 +339,22 @@ export const InvoiceContextProvider = ({ children }: InvoiceContextProviderProps
   );
   return (
     <InvoiceContext.Provider value={contextValue}>
-      <InvoicePdfViewerContext.Provider value={pdfViewerContextValue}>
-        <InvoicePdfViewerStateContext.Provider value={pdfViewerStateContextValue}>
-          <FinalPdfContext.Provider value={finalPdfContextValue}>
-            <InvoiceActionsContext.Provider value={invoiceActionsContextValue}>
-              <InvoiceSubmissionContext.Provider value={invoiceSubmissionContextValue}>
-                <InvoiceImportExportContext.Provider value={invoiceImportExportContextValue}>
-                  <InvoiceSyncContext.Provider value={invoiceSyncContextValue}>
-                    <CustomerTemplatesContext.Provider
-                      value={customerTemplatesContextValue}
-                    >
-                      <SavedInvoicesListDataContext.Provider
-                        value={savedInvoicesListDataContextValue}
-                      >
-                        <SavedInvoicesListActionsContext.Provider
-                          value={savedInvoicesListActionsContextValue}
-                        >
-                          {children}
-                        </SavedInvoicesListActionsContext.Provider>
-                      </SavedInvoicesListDataContext.Provider>
-                    </CustomerTemplatesContext.Provider>
-                  </InvoiceSyncContext.Provider>
-                </InvoiceImportExportContext.Provider>
-              </InvoiceSubmissionContext.Provider>
-            </InvoiceActionsContext.Provider>
-          </FinalPdfContext.Provider>
-        </InvoicePdfViewerStateContext.Provider>
-      </InvoicePdfViewerContext.Provider>
+      <InvoiceSelectorProviders
+        pdfViewerContextValue={pdfViewerContextValue}
+        pdfViewerStateContextValue={pdfViewerStateContextValue}
+        finalPdfContextValue={finalPdfContextValue}
+        invoiceActionsContextValue={invoiceActionsContextValue}
+        invoiceSubmissionContextValue={invoiceSubmissionContextValue}
+        invoiceImportExportContextValue={invoiceImportExportContextValue}
+        invoiceSyncDataContextValue={invoiceSyncDataContextValue}
+        invoiceSyncActionsContextValue={invoiceSyncActionsContextValue}
+        customerTemplatesDataContextValue={customerTemplatesDataContextValue}
+        customerTemplatesActionsContextValue={customerTemplatesActionsContextValue}
+        savedInvoicesListDataContextValue={savedInvoicesListDataContextValue}
+        savedInvoicesListActionsContextValue={savedInvoicesListActionsContextValue}
+      >
+        {children}
+      </InvoiceSelectorProviders>
     </InvoiceContext.Provider>
   );
 };
