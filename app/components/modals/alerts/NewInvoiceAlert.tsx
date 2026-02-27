@@ -6,7 +6,7 @@ import React, { useState } from "react";
 import { useFormContext } from "react-hook-form";
 
 // Context
-import { useInvoiceContext } from "@/contexts/InvoiceContext";
+import { useInvoiceActionsContext } from "@/contexts/InvoiceContext";
 
 // ShadCn
 import {
@@ -36,7 +36,7 @@ const NewInvoiceAlert = ({
   onConfirm,
 }: NewInvoiceAlertProps) => {
   // Invoice context
-  const { newInvoice } = useInvoiceContext();
+  const { newInvoice } = useInvoiceActionsContext();
 
   const {
     formState: { isDirty },
