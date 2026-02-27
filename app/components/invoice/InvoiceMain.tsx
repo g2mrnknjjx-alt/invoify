@@ -10,7 +10,7 @@ import { Form } from "@/components/ui/form";
 import { InvoiceActions, InvoiceForm } from "@/app/components";
 
 // Context
-import { useInvoiceContext } from "@/contexts/InvoiceContext";
+import { useInvoiceSubmissionContext } from "@/contexts/InvoiceContext";
 
 // Types
 import { InvoiceType } from "@/types";
@@ -19,7 +19,7 @@ const InvoiceMain = () => {
     const { handleSubmit } = useFormContext<InvoiceType>();
 
     // Get the needed values from invoice context
-    const { onFormSubmit } = useInvoiceContext();
+    const { onFormSubmit } = useInvoiceSubmissionContext();
 
     return (
         <>
