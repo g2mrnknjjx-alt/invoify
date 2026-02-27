@@ -18,7 +18,7 @@ import BaseButton from "@/app/components/reusables/BaseButton";
 import Subheading from "@/app/components/reusables/Subheading";
 
 // Contexts
-import { useInvoiceContext } from "@/contexts/InvoiceContext";
+import { useCustomerTemplatesContext } from "@/contexts/InvoiceContext";
 import { useTranslationContext } from "@/contexts/TranslationContext";
 
 // Icons
@@ -31,7 +31,7 @@ const CustomerTemplatesPanel = () => {
     applyCustomerTemplate,
     renameCustomerTemplate,
     deleteCustomerTemplate,
-  } = useInvoiceContext();
+  } = useCustomerTemplatesContext();
 
   const { _t } = useTranslationContext();
 
