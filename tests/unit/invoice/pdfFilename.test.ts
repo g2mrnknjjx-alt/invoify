@@ -62,4 +62,12 @@ describe("pdf filename helpers", () => {
       documentType: "invoice",
     });
   });
+
+  it("uses safe metadata defaults when source fields are missing", () => {
+    expect(toPdfFilenameMeta({})).toEqual({
+      recipientName: "",
+      invoiceNumber: "",
+      documentType: "invoice",
+    });
+  });
 });
