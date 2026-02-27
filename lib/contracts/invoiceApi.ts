@@ -4,6 +4,13 @@ import { InvoiceSchema } from "@/lib/schemas";
 import { ExportTypes } from "@/types";
 
 export const MAX_EMAIL_ATTACHMENT_BYTES = 5 * 1024 * 1024;
+export const MAX_PAYMENT_LINK_AMOUNT = 1_000_000_000;
+
+const toOptionalTrimmedString = (value: unknown) => {
+  if (typeof value !== "string") return undefined;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
+};
 
 const toDateCompatibleInvoicePayload = (payload: unknown) => {
   if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
@@ -51,6 +58,7 @@ export const invoiceSendRequestSchema = z.object({
   email: z.string().trim().email(),
   invoiceNumber: z.string().trim().min(1),
   documentType: z.enum(["invoice", "quote"]).optional(),
+  paymentLinkUrl: z.string().trim().url().max(2048).optional(),
   subject: z.string().trim().max(160).optional(),
   body: z.string().trim().max(5000).optional(),
   footer: z.string().trim().max(500).optional(),
@@ -59,6 +67,29 @@ export const invoiceSendRequestSchema = z.object({
     .int()
     .positive()
     .max(MAX_EMAIL_ATTACHMENT_BYTES),
+});
+
+export const invoicePaymentLinkRequestSchema = z.object({
+  invoiceNumber: z.string().trim().min(1),
+  documentType: z.enum(["invoice", "quote"]).optional(),
+  currency: z
+    .string()
+    .trim()
+    .regex(/^[A-Za-z]{3}$/, "Currency must be a 3-letter ISO code")
+    .transform((value) => value.toLowerCase()),
+  amount: z.coerce.number().positive().max(MAX_PAYMENT_LINK_AMOUNT),
+  customerEmail: z.preprocess(
+    toOptionalTrimmedString,
+    z.string().email().optional()
+  ),
+  successUrl: z.preprocess(
+    toOptionalTrimmedString,
+    z.string().url().max(2048).optional()
+  ),
+  cancelUrl: z.preprocess(
+    toOptionalTrimmedString,
+    z.string().url().max(2048).optional()
+  ),
 });
 
 export const invoiceApiErrorSchema = z.object({

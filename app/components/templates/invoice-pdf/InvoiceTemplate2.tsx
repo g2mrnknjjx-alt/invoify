@@ -9,6 +9,7 @@ import {
     toDocumentTypeLabel,
     normalizeDocumentType,
 } from "@/lib/invoice/documentType";
+import { normalizePaymentLinkUrl } from "@/lib/invoice/paymentLink";
 
 // Variables
 import { DATE_OPTIONS } from "@/lib/variables";
@@ -28,6 +29,7 @@ const InvoiceTemplate2 = (data: InvoiceType) => {
             ? "If accepted, payment can be sent to this address"
             : "Please send the payment to this address";
     const supportLabel = `If you have any questions concerning this ${documentLabelLower}, use the following contact information:`;
+    const paymentLinkUrl = normalizePaymentLinkUrl(details.paymentLinkUrl);
     return (
         <InvoiceLayout data={data}>
             <div className="flex justify-between">
@@ -258,6 +260,17 @@ const InvoiceTemplate2 = (data: InvoiceType) => {
                                 Account no:{" "}
                                 {details.paymentInformation?.accountNumber}
                             </p>
+                            {paymentLinkUrl ? (
+                                <p className="text-sm">
+                                    Pay online:{" "}
+                                    <a
+                                        className="text-blue-600 underline break-all"
+                                        href={paymentLinkUrl}
+                                    >
+                                        {paymentLinkUrl}
+                                    </a>
+                                </p>
+                            ) : null}
                         </span>
                     </div>
                 </div>

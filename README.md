@@ -44,6 +44,7 @@ Invoify is a local-first invoice and quote generator built with Next.js App Rout
 - Convert a quote to an invoice with one click (with invoice-number prefix handling).
 - Generate PDFs with template support and browser-side PDF caching.
 - Send PDFs over SMTP with editable subject/body/footer.
+- Generate Stripe checkout links and attach them to invoices/quotes.
 - Save, duplicate, search, filter, and export invoice records.
 - Track lifecycle status (`draft`, `sent`, `paid`, `accepted`, `declined`, `expired`) and payment progress.
 - View saved-invoice insights (outstanding total, overdue count, sent-but-unpaid count).
@@ -134,6 +135,7 @@ Follow these instructions to get Invoify up and running on your local machine.
    SMTP_FROM="Invoify <no-reply@example.com>"
    SMTP_FROM_NAME=
    SMTP_FROM_EMAIL=
+   STRIPE_SECRET_KEY=
    NEXT_PUBLIC_INVOICE_SYNC_PROVIDER=local
    NEXT_PUBLIC_SYNC_DEBOUNCE_MS=5000
    NEXT_PUBLIC_SYNC_MAX_INVOICES=250
@@ -153,6 +155,7 @@ Follow these instructions to get Invoify up and running on your local machine.
    ```
    Use either `SMTP_URL` or `SMTP_HOST`/`SMTP_PORT`/`SMTP_USER`/`SMTP_PASS`.
    `SMTP_FROM` is optional. You can also set `SMTP_FROM_NAME` + `SMTP_FROM_EMAIL`.
+   `STRIPE_SECRET_KEY` is optional and only required for payment-link generation.
    PDF caching is browser-side only and does not require any environment variables.
    `NEXT_PUBLIC_INVOICE_SYNC_PROVIDER` is optional (`local` default, `noop-cloud` and `supabase-rest` supported).
    For `supabase-rest`, also set:
