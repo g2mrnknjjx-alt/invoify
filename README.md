@@ -12,6 +12,7 @@ Invoify is a local-first invoice and quote generator built with Next.js App Rout
   - [Feature Highlights](#feature-highlights)
   - [Architecture](#architecture)
   - [Deployment and Environments](#deployment-and-environments)
+  - [Vercel Environment Checklist](#vercel-environment-checklist)
   - [Sync Behavior](#sync-behavior)
   - [Storage and Migration Notes](#storage-and-migration-notes)
   - [Getting Started](#getting-started)
@@ -62,11 +63,27 @@ Invoify is a local-first invoice and quote generator built with Next.js App Rout
 - Vercel Production is tracked from `master`.
 - Preview deployments are generated for pull requests and non-production branches (including `codex/beta` when used as a beta branch).
 - Required CI checks before merge: `lint`, `unit`, `build`, `e2e`.
+- `NEXT_PUBLIC_*` variables are build-time client variables. Any change requires a redeploy of the environment you are testing.
 - Sentry environment mapping:
   - local development: `development`
   - beta branch/deployments: `beta`
   - production (`master`): `production`
 - Dev DX note: `next.config.js` includes `allowedDevOrigins` for localhost loopback hosts to avoid cross-origin dev warnings.
+
+## Vercel Environment Checklist
+
+When cloud auth/sync appears off in deployed environments, verify this checklist:
+
+1. Set these values in Vercel for both `Preview` and `Production` (unless intentionally disabled in one):
+   - `NEXT_PUBLIC_INVOICE_SYNC_PROVIDER=supabase-rest`
+   - `NEXT_PUBLIC_SUPABASE_URL=https://<project-ref>.supabase.co`
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon-key>`
+2. Confirm the values are not placeholders (for example, not `YOUR_SECRET_VALUE_GOES_HERE`).
+3. Redeploy the same environment you are testing after any `NEXT_PUBLIC_*` change.
+4. Test the correct URL:
+   - Production domain for production config
+   - Preview URL for preview config
+5. If auth still shows off, hard-refresh the browser (`Cmd+Shift+R`) and re-check deployment logs.
 
 ## Sync Behavior
 
@@ -276,6 +293,10 @@ npx playwright install --with-deps chromium
 - Sentry disabled unexpectedly:
   - Verify `NEXT_PUBLIC_SENTRY_DSN` (browser) and/or `SENTRY_DSN` (server) are set.
   - Rebuild after changing env variables (`npm run build`).
+- `Auth Off` in a deployed environment:
+  - Verify `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` are set for the same Vercel environment (`Preview` or `Production`) as the URL being tested.
+  - Verify `NEXT_PUBLIC_INVOICE_SYNC_PROVIDER=supabase-rest`.
+  - Redeploy after changing any `NEXT_PUBLIC_*` variable.
 
 ## Known Limits
 
@@ -283,6 +304,7 @@ npx playwright install --with-deps chromium
 - PDF cache is browser-local (IndexedDB) and is not synced to cloud providers.
 - Email delivery requires valid SMTP configuration (`SMTP_URL` or host/port/user/pass).
 - Aggregated saved-invoice insights are numeric totals and do not currently split by currency.
+- Vercel password protection is plan-dependent and may require an upgraded plan for direct password-based gates.
 
 <!-- LICENSE -->
 ## License
