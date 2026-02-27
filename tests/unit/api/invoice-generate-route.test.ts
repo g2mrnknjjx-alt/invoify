@@ -146,6 +146,30 @@ describe("/api/invoice/generate", () => {
     expect(generatePdfServiceMock).toHaveBeenCalledTimes(1);
   });
 
+  it("returns structured 500 error when PDF service throws unexpectedly", async () => {
+    generatePdfServiceMock.mockRejectedValueOnce(new Error("boom"));
+
+    const req = new NextRequest("http://localhost/api/invoice/generate", {
+      method: "POST",
+      body: JSON.stringify(createValidInvoicePayload()),
+      headers: {
+        "content-type": "application/json",
+      },
+    });
+
+    const res = await POST(req);
+    const payload = await res.json();
+
+    expect(res.status).toBe(500);
+    expect(payload).toMatchObject({
+      error: {
+        code: "generate_pdf_error",
+        message: "Failed to generate PDF",
+      },
+    });
+    expect(payload.error.details).toBeUndefined();
+  });
+
   it("defaults missing sender/receiver country fields to empty string", async () => {
     generatePdfServiceMock.mockResolvedValueOnce(
       NextResponse.json({ ok: true }, { status: 200 })

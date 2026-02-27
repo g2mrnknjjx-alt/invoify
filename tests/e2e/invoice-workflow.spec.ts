@@ -368,6 +368,17 @@ test.describe("invoice workflow", () => {
     );
 
     expect(hasDraftBackup).toBe(true);
+
+    // Recovery should leave the form usable with clean values.
+    const senderNameInput = page.getByPlaceholder("Your name");
+    await expect(senderNameInput).toHaveValue("");
+    await senderNameInput.fill("Recovered Sender");
+    await expect(senderNameInput).toHaveValue("Recovered Sender");
+
+    await page.getByRole("button", { name: /2\.\s*Invoice Details/i }).click();
+    const invoiceNumberInput = page.getByPlaceholder("Invoice number");
+    await invoiceNumberInput.fill("INV-RECOVERED-1");
+    await expect(invoiceNumberInput).toHaveValue("INV-RECOVERED-1");
   });
 
   test("download filename is tied to generated PDF and uses client_name_invoice format", async ({
