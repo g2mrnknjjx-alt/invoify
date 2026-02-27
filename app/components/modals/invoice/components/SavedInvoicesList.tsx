@@ -368,7 +368,10 @@ const SavedInvoicesList = ({ setModalState }: SavedInvoicesListProps) => {
               <p className="text-xs text-muted-foreground">
                 {_t("savedInvoices.insights.totalOutstanding")}
               </p>
-              <p className="text-base font-semibold">
+              <p
+                className="text-base font-semibold"
+                data-testid="saved-invoices-insight-total-outstanding"
+              >
                 {formatNumberWithCommas(
                   Number(insights.totalOutstanding.toFixed(2))
                 )}
@@ -381,7 +384,12 @@ const SavedInvoicesList = ({ setModalState }: SavedInvoicesListProps) => {
               <p className="text-xs text-muted-foreground">
                 {_t("savedInvoices.insights.overdueCount")}
               </p>
-              <p className="text-base font-semibold">{insights.overdueCount}</p>
+              <p
+                className="text-base font-semibold"
+                data-testid="saved-invoices-insight-overdue-count"
+              >
+                {insights.overdueCount}
+              </p>
             </CardContent>
           </Card>
 
@@ -390,7 +398,10 @@ const SavedInvoicesList = ({ setModalState }: SavedInvoicesListProps) => {
               <p className="text-xs text-muted-foreground">
                 {_t("savedInvoices.insights.sentUnpaidCount")}
               </p>
-              <p className="text-base font-semibold">
+              <p
+                className="text-base font-semibold"
+                data-testid="saved-invoices-insight-sent-unpaid-count"
+              >
                 {insights.sentButUnpaidCount}
               </p>
             </CardContent>
