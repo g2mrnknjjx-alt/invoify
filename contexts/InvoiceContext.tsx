@@ -85,6 +85,16 @@ type PdfViewerContextValue = Pick<InvoiceContextValue, "invoicePdf">;
 type PdfViewerStateContextValue = {
   hasGeneratedPdf: boolean;
 };
+type FinalPdfContextValue = Pick<
+  InvoiceContextValue,
+  | "pdfUrl"
+  | "removeFinalPdf"
+  | "previewPdfInTab"
+  | "downloadPdf"
+  | "printPdf"
+  | "saveInvoice"
+  | "sendPdfToMail"
+>;
 
 type SavedInvoicesListContextValue = Pick<
   InvoiceContextValue,
@@ -115,6 +125,15 @@ const defaultPdfViewerContext: PdfViewerContextValue = {
 const defaultPdfViewerStateContext: PdfViewerStateContextValue = {
   hasGeneratedPdf: false,
 };
+const defaultFinalPdfContext: FinalPdfContextValue = {
+  pdfUrl: defaultInvoiceContext.pdfUrl,
+  removeFinalPdf: defaultInvoiceContext.removeFinalPdf,
+  previewPdfInTab: defaultInvoiceContext.previewPdfInTab,
+  downloadPdf: defaultInvoiceContext.downloadPdf,
+  printPdf: defaultInvoiceContext.printPdf,
+  saveInvoice: defaultInvoiceContext.saveInvoice,
+  sendPdfToMail: defaultInvoiceContext.sendPdfToMail,
+};
 
 const defaultSavedInvoicesListDataContext: SavedInvoicesListDataContextValue = {
   savedInvoices: defaultInvoiceContext.savedInvoices,
@@ -134,6 +153,7 @@ const defaultSavedInvoicesListActionsContext: SavedInvoicesListActionsContextVal
 
 const InvoicePdfViewerContext = createContext(defaultPdfViewerContext);
 const InvoicePdfViewerStateContext = createContext(defaultPdfViewerStateContext);
+const FinalPdfContext = createContext(defaultFinalPdfContext);
 const SavedInvoicesListDataContext = createContext(
   defaultSavedInvoicesListDataContext
 );
@@ -151,6 +171,10 @@ export const useInvoicePdfViewerContext = () => {
 
 export const useInvoicePdfViewerState = () => {
   return useContext(InvoicePdfViewerStateContext);
+};
+
+export const useFinalPdfContext = () => {
+  return useContext(FinalPdfContext);
 };
 
 export const useSavedInvoicesListContext = () => {
@@ -324,6 +348,26 @@ export const InvoiceContextProvider = ({ children }: InvoiceContextProviderProps
     }),
     [pdfActions.invoicePdf.size]
   );
+  const finalPdfContextValue = useMemo(
+    () => ({
+      pdfUrl: pdfActions.pdfUrl,
+      removeFinalPdf: pdfActions.removeFinalPdf,
+      previewPdfInTab: pdfActions.previewPdfInTab,
+      downloadPdf: pdfActions.downloadPdf,
+      printPdf: pdfActions.printPdf,
+      saveInvoice: savedState.saveInvoice,
+      sendPdfToMail: exportAndEmail.sendPdfToMail,
+    }),
+    [
+      exportAndEmail.sendPdfToMail,
+      pdfActions.downloadPdf,
+      pdfActions.pdfUrl,
+      pdfActions.previewPdfInTab,
+      pdfActions.printPdf,
+      pdfActions.removeFinalPdf,
+      savedState.saveInvoice,
+    ]
+  );
 
   const savedInvoicesListDataContextValue = useMemo(
     () => ({
@@ -361,13 +405,15 @@ export const InvoiceContextProvider = ({ children }: InvoiceContextProviderProps
     <InvoiceContext.Provider value={contextValue}>
       <InvoicePdfViewerContext.Provider value={pdfViewerContextValue}>
         <InvoicePdfViewerStateContext.Provider value={pdfViewerStateContextValue}>
-          <SavedInvoicesListDataContext.Provider value={savedInvoicesListDataContextValue}>
-            <SavedInvoicesListActionsContext.Provider
-              value={savedInvoicesListActionsContextValue}
-            >
-              {children}
-            </SavedInvoicesListActionsContext.Provider>
-          </SavedInvoicesListDataContext.Provider>
+          <FinalPdfContext.Provider value={finalPdfContextValue}>
+            <SavedInvoicesListDataContext.Provider value={savedInvoicesListDataContextValue}>
+              <SavedInvoicesListActionsContext.Provider
+                value={savedInvoicesListActionsContextValue}
+              >
+                {children}
+              </SavedInvoicesListActionsContext.Provider>
+            </SavedInvoicesListDataContext.Provider>
+          </FinalPdfContext.Provider>
         </InvoicePdfViewerStateContext.Provider>
       </InvoicePdfViewerContext.Provider>
     </InvoiceContext.Provider>

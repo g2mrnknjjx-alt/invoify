@@ -17,7 +17,7 @@ import { SavedInvoicesList } from "@/app/components";
 import { ImportJsonButton } from "@/app/components";
 
 // Context
-import { useInvoiceContext } from "@/contexts/InvoiceContext";
+import { useSavedInvoicesListData } from "@/contexts/InvoiceContext";
 import { useTranslationContext } from "@/contexts/TranslationContext";
 
 type InvoiceLoaderModalType = {
@@ -27,7 +27,7 @@ type InvoiceLoaderModalType = {
 const InvoiceLoaderModal = ({ children }: InvoiceLoaderModalType) => {
   const [open, setOpen] = useState(false);
 
-  const { savedInvoices } = useInvoiceContext();
+  const { savedInvoices } = useSavedInvoicesListData();
   const { _t } = useTranslationContext();
 
   return (
