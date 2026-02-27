@@ -1,9 +1,12 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useMemo, useRef } from "react";
+import React, { createContext, useContext, useMemo } from "react";
 import { useFormContext } from "react-hook-form";
 
 import { useAuthContext } from "@/contexts/AuthContext";
+import {
+  useInvoiceDraftPersistence,
+} from "@/contexts/invoice/useInvoiceDraftPersistence";
 import {
   useInvoiceExportAndEmail,
 } from "@/contexts/invoice/useInvoiceExportAndEmail";
@@ -11,7 +14,6 @@ import { useInvoicePdfActions } from "@/contexts/invoice/useInvoicePdfActions";
 import { useSavedInvoicesState } from "@/contexts/invoice/useSavedInvoicesState";
 import { useInvoiceSyncState } from "@/contexts/invoice/useInvoiceSyncState";
 import useToasts from "@/hooks/useToasts";
-import { writeInvoiceDraft } from "@/lib/storage/invoiceDraft";
 import {
   CachedPdfMeta,
   CustomerTemplateRecord,
@@ -191,7 +193,7 @@ export const InvoiceContextProvider = ({ children }: InvoiceContextProviderProps
   const { getValues, reset, setValue, watch } = useFormContext<InvoiceType>();
   const { accessToken, isAuthenticated, user } = useAuthContext();
 
-  const draftPersistTimeoutRef = useRef<number | null>(null);
+  useInvoiceDraftPersistence({ watch });
 
   const pdfActions = useInvoicePdfActions({
     getValues,
@@ -234,28 +236,6 @@ export const InvoiceContextProvider = ({ children }: InvoiceContextProviderProps
     importInvoiceError,
     exportInvoiceError,
   });
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    const subscription = watch((value) => {
-      if (draftPersistTimeoutRef.current) {
-        window.clearTimeout(draftPersistTimeoutRef.current);
-      }
-
-      draftPersistTimeoutRef.current = window.setTimeout(() => {
-        writeInvoiceDraft(value);
-      }, 300);
-    });
-
-    return () => {
-      subscription.unsubscribe();
-
-      if (draftPersistTimeoutRef.current) {
-        window.clearTimeout(draftPersistTimeoutRef.current);
-      }
-    };
-  }, [watch]);
 
   const contextValue = useMemo(
     () => ({
