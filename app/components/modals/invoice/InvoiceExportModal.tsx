@@ -16,7 +16,7 @@ import {
 import { BaseButton } from "@/app/components";
 
 // Context
-import { useInvoiceContext } from "@/contexts/InvoiceContext";
+import { useInvoiceImportExportContext } from "@/contexts/InvoiceContext";
 
 // Types
 import { ExportTypes } from "@/types";
@@ -28,7 +28,7 @@ type InvoiceExportModalType = {
 const InvoiceExportModal = ({ children }: InvoiceExportModalType) => {
     const [open, setOpen] = useState(false);
 
-    const { invoicePdfLoading, exportInvoiceAs } = useInvoiceContext();
+    const { invoicePdfLoading, exportInvoiceAs } = useInvoiceImportExportContext();
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>{children}</DialogTrigger>

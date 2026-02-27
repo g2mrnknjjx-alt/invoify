@@ -2,7 +2,7 @@
 
 import { useRef } from 'react';
 import { BaseButton } from '@/app/components';
-import { useInvoiceContext } from '@/contexts/InvoiceContext';
+import { useInvoiceImportExportContext } from '@/contexts/InvoiceContext';
 import { Import } from 'lucide-react';
 
 type ImportJsonButtonType = {
@@ -11,7 +11,7 @@ type ImportJsonButtonType = {
 
 const ImportJsonButton = ({ setOpen }: ImportJsonButtonType) => {
     const fileInputRef = useRef<HTMLInputElement>(null);
-    const { importInvoice, invoicePdfLoading } = useInvoiceContext();
+    const { importInvoice, invoicePdfLoading } = useInvoiceImportExportContext();
 
     const handleClick = () => {
         fileInputRef.current?.click();

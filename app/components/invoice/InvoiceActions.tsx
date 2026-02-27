@@ -19,7 +19,7 @@ import SyncDiagnosticsModal from "@/app/components/invoice/actions/SyncDiagnosti
 import SyncConflictsModal from "@/app/components/invoice/actions/SyncConflictsModal";
 
 // Contexts
-import { useInvoiceContext } from "@/contexts/InvoiceContext";
+import { useInvoiceActionsContext } from "@/contexts/InvoiceContext";
 import { useTranslationContext } from "@/contexts/TranslationContext";
 import {
   normalizeDocumentType,
@@ -53,7 +53,8 @@ const InvoiceExportModal = dynamic(
 );
 
 const InvoiceActions = () => {
-  const { invoicePdfLoading, newInvoice, removeFinalPdf } = useInvoiceContext();
+  const { invoicePdfLoading, newInvoice, removeFinalPdf } =
+    useInvoiceActionsContext();
   const { _t } = useTranslationContext();
   const { control, getValues, setValue } = useFormContext<InvoiceType>();
   const documentType = useWatch({
