@@ -133,7 +133,10 @@
         "status": {
             "draft": "Draft",
             "sent": "Sent",
-            "paid": "Paid"
+            "paid": "Paid",
+            "accepted": "Accepted",
+            "declined": "Declined",
+            "expired": "Expired"
         },
         "sender": "Sender",
         "receiver": "Receiver",
@@ -159,6 +162,10 @@
         "duplicate": "Duplicate",
         "markPaid": "Mark Paid",
         "markUnpaid": "Mark Unpaid",
+        "markAccepted": "Mark Accepted",
+        "markDeclined": "Mark Declined",
+        "markExpired": "Mark Expired",
+        "resetToDraft": "Reset to Draft",
         "overdue": "Overdue",
         "payment": {
             "paid": "Collected",

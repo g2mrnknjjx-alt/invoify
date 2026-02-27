@@ -13,7 +13,13 @@ export type ItemType = z.infer<typeof ItemSchema>;
 export type FormType = UseFormReturn<InvoiceType>;
 export type NameType = FieldPath<InvoiceType>;
 
-export type InvoiceStatus = "draft" | "sent" | "paid";
+export type InvoiceStatus =
+    | "draft"
+    | "sent"
+    | "paid"
+    | "accepted"
+    | "declined"
+    | "expired";
 
 export type InvoiceTimelineEventType =
     | "created"

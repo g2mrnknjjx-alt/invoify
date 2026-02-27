@@ -6,6 +6,7 @@ import {
   RecurringFrequency,
   SavedInvoiceRecord,
 } from "@/types";
+import { normalizeDocumentType } from "@/lib/invoice/documentType";
 import { trackClientEvent } from "@/lib/telemetry/clientTelemetry";
 import { normalizeInvoiceDraft } from "@/lib/storage/normalizeInvoice";
 import {
@@ -102,7 +103,18 @@ const isRecord = (value: unknown): value is UnknownRecord => {
 };
 
 const isStatus = (value: unknown): value is InvoiceStatus => {
-  return value === "draft" || value === "sent" || value === "paid";
+  return (
+    value === "draft" ||
+    value === "sent" ||
+    value === "paid" ||
+    value === "accepted" ||
+    value === "declined" ||
+    value === "expired"
+  );
+};
+
+const isQuoteRecord = (record: SavedInvoiceRecord) => {
+  return normalizeDocumentType(record.data.details.documentType) === "quote";
 };
 
 const toNumber = (value: unknown, fallback: number) => {
@@ -652,6 +664,7 @@ export const isSavedInvoiceOverdue = (
   now = Date.now()
 ) => {
   const normalized = normalizeRecord(record);
+  if (isQuoteRecord(normalized)) return false;
   if (normalized.status === "paid") return false;
 
   const dueAt = toTimestamp(normalized.data.details.dueDate);
@@ -675,6 +688,7 @@ export const recordSavedInvoicePayment = (
     records.map((record) => {
       const normalized = normalizeRecord(record);
       if (normalized.id !== id) return normalized;
+      if (isQuoteRecord(normalized)) return normalized;
 
       const total = getInvoiceTotal(normalized);
       const nextPaid = normalized.payment.amountPaid + amount;

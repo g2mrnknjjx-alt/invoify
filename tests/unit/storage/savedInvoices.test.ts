@@ -16,12 +16,13 @@ describe("saved invoice storage", () => {
         {
           id: "record-1",
           invoiceNumber: "INV-001",
-          status: "draft",
+          status: "accepted",
           createdAt: 100,
           updatedAt: 200,
           data: {
             details: {
               invoiceNumber: "INV-001",
+              documentType: "quote",
               totalAmount: 120,
               dueDate: "2026-02-10",
             },
@@ -34,6 +35,7 @@ describe("saved invoice storage", () => {
 
     expect(records).toHaveLength(1);
     expect(records[0].invoiceNumber).toBe("INV-001");
+    expect(records[0].status).toBe("accepted");
     expect(window.localStorage.getItem(SAVED_INVOICES_KEY_V2)).toBeNull();
 
     const migratedRaw = window.localStorage.getItem(SAVED_INVOICES_KEY_V3);
