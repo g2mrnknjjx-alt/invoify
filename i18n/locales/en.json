@@ -78,7 +78,23 @@
                 "heading": "Payment Information",
                 "bankName": "Bank Name",
                 "accountName": "Account Name",
-                "accountNumber": "Account Number"
+                "accountNumber": "Account Number",
+                "paymentLinkUrl": "Payment Link URL",
+                "paymentLinkPlaceholder": "https://checkout.stripe.com/...",
+                "generatePaymentLink": "Generate Stripe Link",
+                "generatingPaymentLink": "Generating Link",
+                "paymentLinkSuccess": {
+                    "title": "Payment link generated",
+                    "description": "The link and QR code have been added to this invoice.",
+                    "descriptionNoQr": "The link was added. QR generation was unavailable this time."
+                },
+                "paymentLinkErrors": {
+                    "missingInvoiceNumber": "Invoice number is required",
+                    "updateInvoiceNumber": "Add an invoice number before generating a payment link.",
+                    "invalidAmount": "Invalid total amount",
+                    "updateTotalAmount": "Set a total amount greater than zero before generating a payment link.",
+                    "generic": "Unable to generate payment link"
+                }
             },
             "summary": {
                 "heading": "Summary",

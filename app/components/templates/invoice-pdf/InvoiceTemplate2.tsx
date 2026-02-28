@@ -9,6 +9,10 @@ import {
     toDocumentTypeLabel,
     normalizeDocumentType,
 } from "@/lib/invoice/documentType";
+import {
+    normalizePaymentLinkUrl,
+    toPaymentLinkDisplayText,
+} from "@/lib/invoice/paymentLink";
 
 // Variables
 import { DATE_OPTIONS } from "@/lib/variables";
@@ -28,6 +32,13 @@ const InvoiceTemplate2 = (data: InvoiceType) => {
             ? "If accepted, payment can be sent to this address"
             : "Please send the payment to this address";
     const supportLabel = `If you have any questions concerning this ${documentLabelLower}, use the following contact information:`;
+    const paymentLinkUrl = normalizePaymentLinkUrl(details.paymentLinkUrl);
+    const paymentLinkText = toPaymentLinkDisplayText(paymentLinkUrl);
+    const paymentLinkQrCodeDataUrl =
+        typeof details.paymentLinkQrCodeDataUrl === "string" &&
+        isDataUrl(details.paymentLinkQrCodeDataUrl)
+            ? details.paymentLinkQrCodeDataUrl
+            : "";
     return (
         <InvoiceLayout data={data}>
             <div className="flex justify-between">
@@ -245,7 +256,7 @@ const InvoiceTemplate2 = (data: InvoiceType) => {
                         </p>
                     </div>
                     <div className="my-2">
-                        <span className="font-semibold text-md text-gray-800">
+                        <div className="font-semibold text-md text-gray-800">
                             {paymentAddressLabel}
                             <p className="text-sm">
                                 Bank: {details.paymentInformation?.bankName}
@@ -258,7 +269,36 @@ const InvoiceTemplate2 = (data: InvoiceType) => {
                                 Account no:{" "}
                                 {details.paymentInformation?.accountNumber}
                             </p>
-                        </span>
+                            {paymentLinkUrl ? (
+                                <div className="mt-2">
+                                    <p className="text-sm font-semibold text-gray-800">
+                                        Pay online:
+                                    </p>
+                                    {paymentLinkQrCodeDataUrl ? (
+                                        <div className="mt-1">
+                                            <img
+                                                src={paymentLinkQrCodeDataUrl}
+                                                width={112}
+                                                height={112}
+                                                alt="Payment QR code"
+                                            />
+                                            <p className="text-xs text-gray-600 mt-1">
+                                                Scan to pay via Stripe.
+                                            </p>
+                                        </div>
+                                    ) : (
+                                        <p className="text-sm">
+                                            <a
+                                                className="text-blue-600 underline break-all"
+                                                href={paymentLinkUrl}
+                                            >
+                                                {paymentLinkText}
+                                            </a>
+                                        </p>
+                                    )}
+                                </div>
+                            ) : null}
+                        </div>
                     </div>
                 </div>
                 <p className="text-gray-500 text-sm">

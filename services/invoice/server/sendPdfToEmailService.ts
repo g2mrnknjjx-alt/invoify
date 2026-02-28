@@ -83,6 +83,7 @@ type SendPdfToEmailArgs = {
   invoicePdf: File;
   invoiceNumber: string;
   documentType?: string;
+  paymentLinkUrl?: string;
   subject?: string;
   body?: string;
   footer?: string;
@@ -96,6 +97,7 @@ export async function sendPdfToEmailService({
   invoicePdf,
   invoiceNumber,
   documentType,
+  paymentLinkUrl,
   subject,
   body,
   footer,
@@ -117,6 +119,7 @@ export async function sendPdfToEmailService({
     SendPdfEmail({
       invoiceNumber,
       documentType: normalizedDocumentType,
+      paymentLinkUrl,
       body,
       footer,
     })

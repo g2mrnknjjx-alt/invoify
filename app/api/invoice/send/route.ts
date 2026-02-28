@@ -19,6 +19,7 @@ export async function POST(req: NextRequest) {
     const body = fd.get("body");
     const footer = fd.get("footer");
     const documentType = fd.get("documentType");
+    const paymentLinkUrl = fd.get("paymentLinkUrl");
     const invoicePdf = fd.get("invoicePdf");
     const invoiceNumber = fd.get("invoiceNumber");
 
@@ -44,6 +45,10 @@ export async function POST(req: NextRequest) {
       footer: toOptionalFormValue(footer),
       documentType:
         typeof documentType === "string" ? toOptionalFormValue(documentType) : undefined,
+      paymentLinkUrl:
+        typeof paymentLinkUrl === "string"
+          ? toOptionalFormValue(paymentLinkUrl)
+          : undefined,
       attachmentSizeBytes: invoicePdf.size,
     });
 
@@ -66,6 +71,7 @@ export async function POST(req: NextRequest) {
       body: parsed.data.body,
       footer: parsed.data.footer,
       documentType: parsed.data.documentType,
+      paymentLinkUrl: parsed.data.paymentLinkUrl,
       invoicePdf,
     });
 
