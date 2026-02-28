@@ -44,7 +44,7 @@ Invoify is a local-first invoice and quote generator built with Next.js App Rout
 - Convert a quote to an invoice with one click (with invoice-number prefix handling).
 - Generate PDFs with template support and browser-side PDF caching.
 - Send PDFs over SMTP with editable subject/body/footer.
-- Generate Stripe checkout links and attach them to invoices/quotes.
+- Generate Stripe checkout links and include a payment QR code in invoices/quotes (with link-text fallback if QR generation is unavailable).
 - Save, duplicate, search, filter, and export invoice records.
 - Track lifecycle status (`draft`, `sent`, `paid`, `accepted`, `declined`, `expired`) and payment progress.
 - View saved-invoice insights (outstanding total, overdue count, sent-but-unpaid count).
@@ -155,7 +155,7 @@ Follow these instructions to get Invoify up and running on your local machine.
    ```
    Use either `SMTP_URL` or `SMTP_HOST`/`SMTP_PORT`/`SMTP_USER`/`SMTP_PASS`.
    `SMTP_FROM` is optional. You can also set `SMTP_FROM_NAME` + `SMTP_FROM_EMAIL`.
-   `STRIPE_SECRET_KEY` is optional and only required for payment-link generation.
+   `STRIPE_SECRET_KEY` is optional and only required for Stripe payment-link and QR generation.
    PDF caching is browser-side only and does not require any environment variables.
    `NEXT_PUBLIC_INVOICE_SYNC_PROVIDER` is optional (`local` default, `noop-cloud` and `supabase-rest` supported).
    For `supabase-rest`, also set:
@@ -236,8 +236,8 @@ npx playwright install --with-deps chromium
   - [https://github.com/g2mrnknjjx-alt/invoify/releases](https://github.com/g2mrnknjjx-alt/invoify/releases)
 - Recommended branch flow:
   - feature work on `codex/*` branches
-  - PR merge into `master`
-  - optional `master -> codex/beta` sync PR when beta should mirror production
+  - PR merge into `codex/beta` for beta validation/deployment
+  - PR merge `codex/beta -> master` for production rollout
 
 ## Supabase Free-Plan Guardrails
 
@@ -299,6 +299,10 @@ npx playwright install --with-deps chromium
   - Verify `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` are set for the same Vercel environment (`Preview` or `Production`) as the URL being tested.
   - Verify `NEXT_PUBLIC_INVOICE_SYNC_PROVIDER=supabase-rest`.
   - Redeploy after changing any `NEXT_PUBLIC_*` variable.
+- Stripe payment link works but QR does not appear in PDF:
+  - Verify `STRIPE_SECRET_KEY` is set in the same deployed environment and trigger a fresh deployment.
+  - Regenerate the payment link before creating/downloading the PDF.
+  - If QR generation fails upstream, the PDF intentionally falls back to a shortened clickable link.
 
 ## Known Limits
 
@@ -307,13 +311,6 @@ npx playwright install --with-deps chromium
 - Email delivery requires valid SMTP configuration (`SMTP_URL` or host/port/user/pass).
 - Aggregated saved-invoice insights are numeric totals and do not currently split by currency.
 - Vercel password protection is plan-dependent and may require an upgraded plan for direct password-based gates.
-
-## Known Limits
-
-- The app is local-first; cloud sync is optional and currently snapshot-based.
-- PDF cache is browser-local (IndexedDB) and is not synced to cloud providers.
-- Email delivery requires valid SMTP configuration (`SMTP_URL` or host/port/user/pass).
-- Aggregated saved-invoice insights are numeric totals and do not currently split by currency.
 
 <!-- LICENSE -->
 ## License
