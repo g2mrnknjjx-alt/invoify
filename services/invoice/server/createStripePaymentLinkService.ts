@@ -4,6 +4,7 @@ import {
 } from "@/lib/invoice/documentType";
 import { HttpError } from "@/lib/server/httpError";
 import { STRIPE_SECRET_KEY } from "@/lib/variables";
+import QRCode from "qrcode";
 
 type CreateStripePaymentLinkArgs = {
   invoiceNumber: string;
@@ -73,7 +74,7 @@ export const createStripePaymentLinkService = async ({
   successUrl,
   cancelUrl,
   requestOrigin,
-}: CreateStripePaymentLinkArgs): Promise<{ url: string }> => {
+}: CreateStripePaymentLinkArgs): Promise<{ url: string; qrCodeDataUrl: string }> => {
   if (!STRIPE_SECRET_KEY) {
     throw new HttpError({
       status: 500,
@@ -169,5 +170,20 @@ export const createStripePaymentLinkService = async ({
     });
   }
 
-  return { url };
+  let qrCodeDataUrl = "";
+  try {
+    qrCodeDataUrl = await QRCode.toDataURL(url, {
+      errorCorrectionLevel: "M",
+      margin: 1,
+      width: 192,
+      color: {
+        dark: "#111827",
+        light: "#FFFFFF",
+      },
+    });
+  } catch {
+    qrCodeDataUrl = "";
+  }
+
+  return { url, qrCodeDataUrl };
 };

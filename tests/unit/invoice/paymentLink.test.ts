@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   hasPaymentLinkUrl,
   normalizePaymentLinkUrl,
+  toPaymentLinkDisplayText,
 } from "@/lib/invoice/paymentLink";
 
 describe("payment link helpers", () => {
@@ -27,5 +28,28 @@ describe("payment link helpers", () => {
       true
     );
     expect(hasPaymentLinkUrl("bad-url")).toBe(false);
+  });
+
+  it("renders a short readable payment-link label for invoice output", () => {
+    const value = toPaymentLinkDisplayText(
+      "https://checkout.stripe.com/c/pay/cs_test_a_very_long_token?prefilled_email=client@example.com"
+    );
+
+    expect(value).toContain("checkout.stripe.com");
+    expect(value).toContain("…");
+    expect(value.length).toBeLessThanOrEqual(32);
+  });
+
+  it("supports an explicit max length override", () => {
+    const value = toPaymentLinkDisplayText(
+      "https://checkout.stripe.com/c/pay/cs_test_a_very_long_token",
+      20
+    );
+
+    expect(value.length).toBeLessThanOrEqual(20);
+  });
+
+  it("returns empty display text for invalid links", () => {
+    expect(toPaymentLinkDisplayText("not-a-url")).toBe("");
   });
 });

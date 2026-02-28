@@ -85,7 +85,8 @@
                 "generatingPaymentLink": "Generating Link",
                 "paymentLinkSuccess": {
                     "title": "Payment link generated",
-                    "description": "The link has been added to this invoice."
+                    "description": "The link and QR code have been added to this invoice.",
+                    "descriptionNoQr": "The link was added. QR generation was unavailable this time."
                 },
                 "paymentLinkErrors": {
                     "missingInvoiceNumber": "Invoice number is required",

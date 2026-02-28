@@ -186,6 +186,7 @@ export const FORM_DEFAULT_VALUES = {
       accountNumber: "",
     },
     paymentLinkUrl: "",
+    paymentLinkQrCodeDataUrl: "",
     additionalNotes: "",
     paymentTerms: "",
     totalAmountInWords: "",
@@ -266,6 +267,7 @@ export const FORM_FILL_VALUES = {
       accountNumber: "445566998877",
     },
     paymentLinkUrl: "",
+    paymentLinkQrCodeDataUrl: "",
     additionalNotes: "Thank you for your business",
     paymentTerms: "Net 30",
     signature: {

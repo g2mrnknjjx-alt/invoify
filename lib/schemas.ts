@@ -190,6 +190,7 @@ const InvoiceDetailsSchema = z.object({
     items: z.array(ItemSchema),
     paymentInformation: PaymentInformationSchema.optional(),
     paymentLinkUrl: fieldValidators.stringOptional,
+    paymentLinkQrCodeDataUrl: fieldValidators.stringOptional,
     taxDetails: TaxDetailsSchema.optional(),
     discountDetails: DiscountDetailsSchema.optional(),
     shippingDetails: ShippingDetailsSchema.optional(),

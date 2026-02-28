@@ -57,7 +57,7 @@ const PaymentInformation = () => {
     setIsGeneratingPaymentLink(true);
 
     try {
-      const url = await createPaymentLink({
+      const paymentLink = await createPaymentLink({
         invoiceNumber,
         documentType: normalizeDocumentType(documentType),
         currency: formValues.details.currency,
@@ -65,15 +65,26 @@ const PaymentInformation = () => {
         customerEmail: formValues.receiver.email,
       });
 
-      setValue("details.paymentLinkUrl", url, {
+      setValue("details.paymentLinkUrl", paymentLink.url, {
         shouldDirty: true,
         shouldTouch: true,
         shouldValidate: true,
       });
+      setValue(
+        "details.paymentLinkQrCodeDataUrl",
+        paymentLink.qrCodeDataUrl || "",
+        {
+          shouldDirty: true,
+          shouldTouch: true,
+          shouldValidate: false,
+        }
+      );
 
       toast({
         title: _t("form.steps.paymentInfo.paymentLinkSuccess.title"),
-        description: _t("form.steps.paymentInfo.paymentLinkSuccess.description"),
+        description: paymentLink.qrCodeDataUrl
+          ? _t("form.steps.paymentInfo.paymentLinkSuccess.description")
+          : _t("form.steps.paymentInfo.paymentLinkSuccess.descriptionNoQr"),
       });
     } catch (error) {
       const reason =

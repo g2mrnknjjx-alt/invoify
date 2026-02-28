@@ -192,6 +192,10 @@ const normalizeInvoiceDetails = (
       source.paymentLinkUrl,
       fallback.paymentLinkUrl || ""
     ),
+    paymentLinkQrCodeDataUrl: toStringValue(
+      source.paymentLinkQrCodeDataUrl,
+      fallback.paymentLinkQrCodeDataUrl || ""
+    ),
     taxDetails: {
       amount: toNumberValue(taxDetailsSource.amount, fallbackTaxDetails.amount),
       taxID: toStringValue(taxDetailsSource.taxID, fallbackTaxDetails.taxID),

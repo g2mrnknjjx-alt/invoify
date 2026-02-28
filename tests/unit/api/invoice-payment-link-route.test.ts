@@ -62,6 +62,7 @@ describe("/api/invoice/payment-link", () => {
   it("passes validated payload to service", async () => {
     createStripePaymentLinkServiceMock.mockResolvedValueOnce({
       url: "https://checkout.stripe.com/c/pay/cs_test_123",
+      qrCodeDataUrl: "data:image/png;base64,qr123",
     });
 
     const req = new NextRequest("http://localhost/api/invoice/payment-link", {
@@ -85,6 +86,7 @@ describe("/api/invoice/payment-link", () => {
     expect(payload).toEqual({
       ok: true,
       url: "https://checkout.stripe.com/c/pay/cs_test_123",
+      qrCodeDataUrl: "data:image/png;base64,qr123",
     });
     expect(createStripePaymentLinkServiceMock).toHaveBeenCalledWith(
       expect.objectContaining({
