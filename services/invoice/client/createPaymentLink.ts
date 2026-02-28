@@ -11,6 +11,11 @@ type CreatePaymentLinkArgs = {
   cancelUrl?: string;
 };
 
+export type PaymentLinkResult = {
+  url: string;
+  qrCodeDataUrl?: string;
+};
+
 export const createPaymentLink = async ({
   invoiceNumber,
   documentType,
@@ -19,7 +24,7 @@ export const createPaymentLink = async ({
   customerEmail,
   successUrl,
   cancelUrl,
-}: CreatePaymentLinkArgs): Promise<string> => {
+}: CreatePaymentLinkArgs): Promise<PaymentLinkResult> => {
   const response = await fetch(CREATE_PAYMENT_LINK_API, {
     method: "POST",
     headers: {
@@ -52,10 +57,20 @@ export const createPaymentLink = async ({
     );
   }
 
-  const payload = (await response.json()) as { url?: unknown };
+  const payload = (await response.json()) as {
+    url?: unknown;
+    qrCodeDataUrl?: unknown;
+  };
   if (typeof payload.url !== "string" || payload.url.trim().length === 0) {
     throw new Error("Payment link response is missing url");
   }
 
-  return payload.url;
+  return {
+    url: payload.url,
+    qrCodeDataUrl:
+      typeof payload.qrCodeDataUrl === "string" &&
+      payload.qrCodeDataUrl.startsWith("data:image/")
+        ? payload.qrCodeDataUrl
+        : undefined,
+  };
 };

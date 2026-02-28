@@ -39,6 +39,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       ok: true,
       url: result.url,
+      qrCodeDataUrl: result.qrCodeDataUrl,
     });
   } catch (error) {
     const shouldReportServerError =
